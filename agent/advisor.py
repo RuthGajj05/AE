@@ -23,13 +23,14 @@ import anthropic
 from pydantic import BaseModel, Field
 
 if __package__:
-    from . import business_agent, competitor_agent, fast_competitors, pos
+    from . import business_agent, competitor_agent, fast_competitors, notify, pos
     from .agent_loop import configured_model, validate_max_workers
     from .market_intelligence import OwnerMenu
 else:
     import business_agent
     import competitor_agent
     import fast_competitors
+    import notify
     import pos
     from agent_loop import configured_model, validate_max_workers
     from market_intelligence import OwnerMenu
@@ -65,7 +66,14 @@ ADVISOR_SYSTEM = """You advise the owner of a small, brick-and-mortar business. 
 - Respect market_intelligence as the source of computed product gaps, sample counts and temporal trends. A needs_confirmation gap is only a potential opportunity. Only confirmed_absent means the owner supplied a fresh complete menu. Missing items in a partial menu or sales export never establish absence.
 - Never promote insufficient_evidence into a rising or falling trend. Describe observed review shares with dates, counts and limitations; review mentions and competitor offerings are not sales. Negative mentions are complaints, not positive demand.
 - Do not recommend adding a product already in owner_menu.products; account for supported synonyms such as pain au chocolat and chocolate croissant.
-- If the sales input has is_synthetic=true or data_origin=synthetic_demo, state prominently that this is a demonstration using invented sales and cannot describe the named business's actual performance. Preserve that caveat in the snapshot and caveats; never treat synthetic inputs as real."""
+- If the sales input has is_synthetic=true or data_origin=synthetic_demo, state prominently that this is a demonstration using invented sales and cannot describe the named business's actual performance. Preserve that caveat in the snapshot and caveats; never treat synthetic inputs as real.
+- If <own_sales_analysis> says no sales data was provided, base the advice on the competitor research and the online presence only: leave est_monthly_impact_usd null and say in impact_math that there is no sales data to size it, and mention in the caveats that sales data would sharpen the advice."""
+
+NO_SALES = {"items": [], "note": "No sales data was provided."}
+
+# A product counts as a gap only when at least this many competitors sell it,
+# so one shop's specialty doesn't show up as a market gap.
+MIN_GAP_COMPETITORS = 2
 
 
 def _validate_days(days: int) -> None:
@@ -73,9 +81,11 @@ def _validate_days(days: int) -> None:
         raise ValueError("days must be a positive integer")
 
 
-def load_sales(source: str, days: int, *, synthetic: bool = False) -> dict:
-    """`source` is "square", "toast", or the path to a sales CSV export."""
+def load_sales(source: str | None, days: int, *, synthetic: bool = False) -> dict:
+    """`source` is "square", "toast", the path to a sales CSV export, or None for no sales data."""
     _validate_days(days)
+    if source is None:
+        return dict(NO_SALES)
     if source == "square":
         environment = os.environ.get("SQUARE_ENVIRONMENT", "production")
         return business_agent.analyze_rows(
@@ -88,7 +98,7 @@ def load_sales(source: str, days: int, *, synthetic: bool = False) -> dict:
 
 
 def run(
-    business: str, business_type: str, location: str, sales_source: str,
+    business: str, business_type: str, location: str, sales_source: str | None,
     website: str | None = None, days: int = 56,
     *, owner_menu: OwnerMenu | dict | None = None, max_workers: int = 4,
     reports_dir: Path | str | None = None, use_history: bool = True, synthetic_sales: bool = False,
@@ -102,8 +112,9 @@ def run(
     # price-check the owner's top sellers; competitor and presence research then run in parallel.
     sales = load_sales(sales_source, days, synthetic=synthetic_sales)
     top_items = [i["item"] for i in sales.get("items", [])[:4]]
+    owner_products = explicit_menu.products if explicit_menu else [i["item"] for i in sales.get("items", [])]
     with ThreadPoolExecutor(max_workers=2) as pool:
-        competitors_f = pool.submit(fast_competitors.run, business, business_type, location, top_items)
+        competitors_f = pool.submit(fast_competitors.run, business, business_type, location, top_items, owner_products)
         presence_f = pool.submit(
             business_agent.research_presence, business, location, website, max_workers=max_workers,
             model=fast_competitors.FAST_MODEL,
@@ -121,6 +132,7 @@ def run(
         resolved_menu = explicit_menu
     competitors = competitor_agent.analyze_report(
         competitors, resolved_menu, reports_dir=reports_dir, use_history=use_history,
+        min_gap_competitors=MIN_GAP_COMPETITORS,
     )
     print(f"[advisor] research done in {time.monotonic() - start:.0f}s, writing advice...", file=sys.stderr)
 
@@ -178,7 +190,7 @@ def run(
     }
 
 
-def run_for_business(business_id: str, sales_source: str, *, store=None, **kwargs) -> tuple[dict, str]:
+def run_for_business(business_id: str, sales_source: str | None, *, store=None, **kwargs) -> tuple[dict, str]:
     """Run the advisor for a business stored in Supabase and save the report to
     its advisor_reports, so the owner can look back on it in the app.
     Returns the report and the new advisor_reports row id."""
@@ -204,8 +216,8 @@ def main() -> None:
         help="A business stored in Supabase: use its name, type, location and website, and save the report to its advisor_reports",
     )
     parser.add_argument(
-        "--sales", required=True,
-        help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export",
+        "--sales",
+        help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export. Optional: without it the advice rests on the competitor research alone",
     )
     parser.add_argument("--days", type=int, default=56, help="Days of POS sales to pull (default 56)")
     parser.add_argument("--website", help="The business's website, if it has one")
@@ -214,6 +226,8 @@ def main() -> None:
     parser.add_argument("--reports-dir", type=Path, default=competitor_agent.REPORTS_DIR, help="Directory for saved reports and matching evidence history")
     parser.add_argument("--no-history", action="store_true", help="Analyze only this run's evidence")
     parser.add_argument("--synthetic-sales", action="store_true", help="Label the supplied CSV as demonstration data")
+    parser.add_argument("--email", metavar="ADDRESS", help="Email the finished report to this address (Resend or SMTP settings in .env, see README)")
+    parser.add_argument("--email-preview", action="store_true", help="With --email: write an HTML preview to the reports directory instead of sending")
     args = parser.parse_args()
     if not args.business_id and not (args.business and args.business_type and args.location):
         parser.error("give a business, type and location, or --business-id")
@@ -241,6 +255,13 @@ def main() -> None:
     print(f"\nSaved to {out}")
     if row_id:
         print(f"Saved to Supabase advisor_reports (id {row_id})")
+
+    if args.email:  # the report is already saved, so an email problem never loses it
+        try:
+            print(notify.email_report(report, args.email, args.reports_dir if args.email_preview else None))
+        except Exception as e:
+            print(f"Could not email the report: {e}", file=sys.stderr)
+            sys.exit(1)
 
 
 if __name__ == "__main__":

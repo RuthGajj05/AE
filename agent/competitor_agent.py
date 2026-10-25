@@ -605,7 +605,7 @@ def run(
 def analyze_report(
     report: dict, owner_menu: OwnerMenu, *, reports_dir: Path = REPORTS_DIR,
     as_of: date | None = None, window_days: int = 30, min_reviews: int = 10,
-    use_history: bool = True,
+    use_history: bool = True, min_gap_competitors: int = 1,
 ) -> dict:
     """Enrich a live or imported report with reproducible, offline calculations."""
     as_of = as_of or date.today()
@@ -627,6 +627,7 @@ def analyze_report(
         report["business"], report["location"], owner_menu=owner_menu,
         evidence=analysis_evidence, as_of=as_of,
         window_days=window_days, min_reviews_per_period=min_reviews,
+        min_gap_competitors=min_gap_competitors,
     )
     report.update(
         schema_version=2,
