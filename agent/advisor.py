@@ -4,10 +4,12 @@ recommendations specific to what this business lacks or could change.
 
 Usage:
     python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv
+    python agent/advisor.py "My Cafe" cafe "Ballard, Seattle" --sales square
 """
 
 import argparse
 import json
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -19,12 +21,13 @@ import anthropic
 from pydantic import BaseModel, Field
 
 if __package__:
-    from . import business_agent, competitor_agent
+    from . import business_agent, competitor_agent, pos
     from .agent_loop import configured_model, validate_max_workers
     from .market_intelligence import OwnerMenu
 else:
     import business_agent
     import competitor_agent
+    import pos
     from agent_loop import configured_model, validate_max_workers
     from market_intelligence import OwnerMenu
 
@@ -61,12 +64,33 @@ ADVISOR_SYSTEM = """You advise the owner of a small, brick-and-mortar business. 
 - If the sales input has is_synthetic=true or data_origin=synthetic_demo, state prominently that this is a demonstration using invented sales and cannot describe the named business's actual performance. Preserve that caveat in the snapshot and caveats; never treat synthetic inputs as real."""
 
 
+def _validate_days(days: int) -> None:
+    if isinstance(days, bool) or not isinstance(days, int) or days < 1:
+        raise ValueError("days must be a positive integer")
+
+
+def load_sales(source: str, days: int, *, synthetic: bool = False) -> dict:
+    """`source` is "square", "toast", or the path to a sales CSV export."""
+    _validate_days(days)
+    if source == "square":
+        environment = os.environ.get("SQUARE_ENVIRONMENT", "production")
+        return business_agent.analyze_rows(
+            pos.fetch_square(days), source="square", environment=environment,
+            synthetic=synthetic or environment == "sandbox",
+        )
+    if source == "toast":
+        return business_agent.analyze_rows(pos.fetch_toast(days), source="toast", synthetic=synthetic)
+    return business_agent.analyze_sales(source, synthetic=synthetic)
+
+
 def run(
-    business: str, business_type: str, location: str, sales_csv: str, website: str | None = None,
+    business: str, business_type: str, location: str, sales_source: str,
+    website: str | None = None, days: int = 56,
     *, owner_menu: OwnerMenu | dict | None = None, max_workers: int = 4,
     reports_dir: Path | str | None = None, use_history: bool = True, synthetic_sales: bool = False,
 ) -> dict:
     validate_max_workers(max_workers)
+    _validate_days(days)
     explicit_menu = OwnerMenu.model_validate(owner_menu) if owner_menu is not None else None
     reports_dir = Path(reports_dir) if reports_dir is not None else competitor_agent.REPORTS_DIR
     start = time.monotonic()
@@ -74,7 +98,7 @@ def run(
         competitors_f = pool.submit(competitor_agent.run, business, business_type, location,
                                     owner_menu=explicit_menu, max_workers=max_workers)
         presence_f = pool.submit(business_agent.research_presence, business, location, website, max_workers=max_workers)
-        sales_f = pool.submit(business_agent.analyze_sales, sales_csv, synthetic=synthetic_sales)
+        sales_f = pool.submit(load_sales, sales_source, days, synthetic=synthetic_sales)
         sales, presence = sales_f.result(), presence_f.result()
         competitors = competitors_f.result()
     if explicit_menu is None:
@@ -150,7 +174,11 @@ def main() -> None:
     parser.add_argument("business", help="Business name")
     parser.add_argument("business_type", help="e.g. bakery, dog groomer, cafe")
     parser.add_argument("location", help="Neighborhood and city, e.g. 'Ballard, Seattle'")
-    parser.add_argument("--sales", required=True, help="Square 'Items' sales export (CSV)")
+    parser.add_argument(
+        "--sales", required=True,
+        help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export",
+    )
+    parser.add_argument("--days", type=int, default=56, help="Days of POS sales to pull (default 56)")
     parser.add_argument("--website", help="The business's website, if it has one")
     parser.add_argument("--owner-menu", type=Path, help="JSON owner menu; only a fresh explicit complete menu can confirm absent products")
     parser.add_argument("--max-workers", type=int, choices=range(1, 11), default=4, help="Maximum concurrent retrieval tools per research stage (default: 4)")
@@ -161,7 +189,7 @@ def main() -> None:
 
     owner_menu = OwnerMenu.model_validate_json(args.owner_menu.read_text()) if args.owner_menu else None
     report = run(
-        args.business, args.business_type, args.location, args.sales, args.website,
+        args.business, args.business_type, args.location, args.sales, args.website, args.days,
         owner_menu=owner_menu, max_workers=args.max_workers, reports_dir=args.reports_dir,
         use_history=not args.no_history, synthetic_sales=args.synthetic_sales,
     )

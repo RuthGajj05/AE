@@ -193,6 +193,73 @@ class BusinessPresenceTests(unittest.TestCase):
         self.assertTrue(any("not a complete current menu" in value for value in result["caveats"]))
 
 
+class PosIntegrationTests(unittest.TestCase):
+    ROWS = [
+        {"Date": "2026-10-25", "Time": "08:00:00", "Item": "Pain au Chocolat", "Qty": 0.5, "Gross Sales": 2.5},
+        {"Date": "2026-10-25", "Time": "09:00:00", "Item": "Pain au Chocolat", "Qty": "1.25", "Gross Sales": "$6.25"},
+    ]
+
+    def test_numeric_money_and_fractional_pos_quantities_are_preserved(self):
+        result = business_agent.analyze_rows(self.ROWS, source="square", environment="production")
+        self.assertEqual(result["items"][0]["units"], 1.75)
+        self.assertEqual(result["items"][0]["avg_price"], 5.0)
+        self.assertEqual(result["total_revenue"], 8.75)
+        self.assertEqual(result["sales_source"], "square")
+        self.assertEqual(result["sales_environment"], "production")
+        self.assertEqual(result["data_origin"], "pos_api")
+        self.assertFalse(result["is_synthetic"])
+
+    def test_square_sandbox_dispatch_records_source_and_marks_synthetic(self):
+        with patch.object(advisor.pos, "fetch_square", return_value=self.ROWS) as fetch, \
+             patch.dict(os.environ, {"SQUARE_ENVIRONMENT": "sandbox"}):
+            result = advisor.load_sales("square", 14)
+        fetch.assert_called_once_with(14)
+        self.assertTrue(result["is_synthetic"])
+        self.assertEqual(result["data_origin"], "synthetic_demo")
+        self.assertEqual(result["sales_environment"], "sandbox")
+        self.assertEqual(result["sales_source"], "square")
+
+    def test_toast_dispatch_and_explicit_demo_label(self):
+        with patch.object(advisor.pos, "fetch_toast", return_value=self.ROWS) as fetch:
+            production = advisor.load_sales("toast", 7)
+            demo = advisor.load_sales("toast", 7, synthetic=True)
+        self.assertEqual(fetch.call_count, 2)
+        self.assertEqual(production["sales_source"], "toast")
+        self.assertFalse(production["is_synthetic"])
+        self.assertTrue(demo["is_synthetic"])
+
+    def test_csv_dispatch_preserves_explicit_synthetic_flag(self):
+        with patch.object(business_agent, "analyze_sales", return_value={"is_synthetic": True}) as csv, \
+             patch.object(advisor.pos, "fetch_square") as square, patch.object(advisor.pos, "fetch_toast") as toast:
+            result = advisor.load_sales("uploaded.csv", 56, synthetic=True)
+        csv.assert_called_once_with("uploaded.csv", synthetic=True)
+        square.assert_not_called()
+        toast.assert_not_called()
+        self.assertTrue(result["is_synthetic"])
+
+    def test_square_sales_flow_through_advisor_without_losing_demo_or_menu_safety(self):
+        with tempfile.TemporaryDirectory() as directory, \
+            patch.object(competitor_agent, "run", return_value=facts()), \
+            patch.object(business_agent, "research_presence", return_value={}), \
+            patch.object(advisor.pos, "fetch_square", return_value=self.ROWS) as fetch, \
+            patch.dict(os.environ, {"SQUARE_ENVIRONMENT": "sandbox"}), \
+            patch.object(advisor.anthropic, "Anthropic", return_value=advice_client()):
+            result = advisor.run("Owner Bakery", "bakery", "1 Main Street, Seattle", sales_source="square", days=14, reports_dir=directory)
+        fetch.assert_called_once_with(14)
+        self.assertEqual(result["mode"], "demo")
+        self.assertFalse(result["owner_menu"]["confirmed_complete"])
+        self.assertEqual(result["owner_menu"]["products"], ["Pain au Chocolat"])
+        self.assertEqual([gap["product"] for gap in result["market_intelligence"]["product_gaps"]], ["matcha latte"])
+
+    def test_invalid_pos_day_range_fails_before_any_research(self):
+        with patch.object(competitor_agent, "run") as competitor_run, patch.object(advisor.pos, "fetch_square") as fetch:
+            for days in (0, -1, True, 2.5):
+                with self.subTest(days=days), self.assertRaises(ValueError):
+                    advisor.run("Owner", "bakery", "Seattle", "square", days=days)
+            competitor_run.assert_not_called()
+            fetch.assert_not_called()
+
+
 class AdvisorPipelineTests(unittest.TestCase):
     def test_three_research_stages_are_parallel_then_intelligence_precedes_advice(self):
         barrier = Barrier(3)

@@ -30,7 +30,9 @@ else:
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
-def _money(s: str) -> float:
+def _money(s: str | float) -> float:
+    if isinstance(s, (int, float)):
+        return float(s)
     return float(s.replace("$", "").replace(",", "").strip() or 0)
 
 
@@ -44,9 +46,14 @@ def analyze_sales(csv_path: str, *, synthetic: bool = False) -> dict:
     known_fixture = Path(__file__).resolve().parent.parent / "data" / "sample_sales.csv"
     is_synthetic = synthetic or csv_path.resolve() == known_fixture.resolve()
     with csv_path.open(newline="") as f:
-        rows = list(csv.DictReader(f))
+        return analyze_rows(list(csv.DictReader(f)), source="csv", synthetic=is_synthetic)
+
+
+def analyze_rows(rows: list[dict], *, source: str = "rows", environment: str | None = None,
+                 synthetic: bool = False) -> dict:
+    """Summarize item-level sales rows (from a CSV export or pos.fetch_square/fetch_toast)."""
     if not rows:
-        raise ValueError(f"No rows in {csv_path}")
+        raise ValueError("No sales rows to analyze")
 
     days: set[str] = set()
     day_revenue: dict[str, float] = defaultdict(float)
@@ -62,7 +69,7 @@ def analyze_sales(csv_path: str, *, synthetic: bool = False) -> dict:
         d = r["Date"]
         t = datetime.strptime(r["Time"], "%H:%M:%S")
         mins = t.hour * 60 + t.minute
-        qty, revenue = int(float(r["Qty"])), _money(r["Gross Sales"])
+        qty, revenue = float(r["Qty"]), _money(r["Gross Sales"])
         days.add(d)
         day_revenue[d] += revenue
         day_first_sale[d] = min(day_first_sale.get(d, 24 * 60), mins)
@@ -98,7 +105,7 @@ def analyze_sales(csv_path: str, *, synthetic: bool = False) -> dict:
             "item": name,
             "category": it["category"],
             "avg_price": round(it["revenue"] / it["qty"], 2),
-            "units": it["qty"],
+            "units": round(it["qty"], 2),
             "revenue": round(it["revenue"], 2),
             "revenue_share_pct": round(100 * it["revenue"] / total, 1),
             "avg_units_per_open_day": round(it["qty"] / n_days, 1),
@@ -111,10 +118,12 @@ def analyze_sales(csv_path: str, *, synthetic: bool = False) -> dict:
     item_stats.sort(key=lambda x: x["revenue"], reverse=True)
 
     return {
-        "data_origin": "synthetic_demo" if is_synthetic else "user_supplied",
-        "is_synthetic": is_synthetic,
+        "sales_source": source,
+        "sales_environment": environment,
+        "data_origin": "synthetic_demo" if synthetic else "pos_api" if source in {"square", "toast"} else "user_supplied",
+        "is_synthetic": synthetic,
         "caveats": [
-            *(["This CSV contains synthetic demonstration sales, not observed sales of the named business."] if is_synthetic else []),
+            *(["This input contains synthetic demonstration sales, not observed sales of the named business."] if synthetic else []),
             "Sales list products that sold during this period, not a complete current menu.",
             "Days without transactions do not prove the business was closed; an early last sale does not prove an item sold out.",
         ],

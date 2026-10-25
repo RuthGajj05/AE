@@ -41,8 +41,9 @@ from agent.advisor import run as advise
 
 report = advise(
     "Example Bakery", "bakery", "Exact branch address, city",
-    sales_csv="/path/to/sales.csv",
+    sales_source="/path/to/sales.csv",  # Or "square" or "toast".
     website="https://example.com",
+    days=56,  # POS lookback; CSV contents determine the CSV period.
     owner_menu={"products": ["Butter croissant"],
                 "confirmed_complete": False, "confirmed_at": None},
     max_workers=4,
@@ -52,13 +53,15 @@ report = advise(
 )
 ```
 
+`sales_source` accepts a CSV path, `"square"`, or `"toast"`. `days=56` controls the POS lookback. POS credentials stay in the backend environment; the application does not pass them in the report. Square and Toast rows use the same calculations as CSV rows, preserving fractional item quantities.
+
 The advisor retains its parallel competitor, online-presence, and sales stages. It runs deterministic product analysis after those inputs arrive and before Claude writes advice. With no explicit owner menu, positively sold items become known products with `confirmed_complete=False` and no confirmation date. A separate competitor snapshot supplies incremental history.
 
 The returned advisor dictionary retains `advice`, `your_sales`, `your_online_presence`, and `competitors`. `competitors` contains the enriched competitor report described below; the advisor also exposes `market_intelligence`, `owner_menu`, `evidence_bundle`, and `source_coverage`. Its top-level `mode` is `advisor`, or `demo` for recognized/declared synthetic sales. Use the nested `competitors` report for the complete portable analysis bundle and its collection-mode metadata.
 
-`advice` contains `snapshot`, `strengths`, `gaps_vs_competitors`, `recommendations`, and `caveats`. Each recommendation retains its title, category, action, business/market evidence, confidence, `est_monthly_impact_usd`, and `impact_math`. A null impact is unavailable, not zero; any numeric impact is an assumption-based scenario. `competitor_snapshot` is a local saved-file path for the backend, not a customer-facing source URL.
+`advice` contains `snapshot`, `strengths`, `gaps_vs_competitors`, `recommendations`, and `caveats`. Each recommendation retains its title, category, action, business/market evidence, confidence, `est_monthly_impact_usd`, and `impact_math`. A null impact is unavailable, not zero; any numeric impact is an assumption-based scenario. `competitor_snapshot` is the saved competitor snapshot filename, not an absolute path or a customer-facing source URL. Resolve it against the configured reports directory on the backend. The advisor CLI uses unique report filenames so repeated runs do not overwrite an earlier report.
 
-`your_sales` carries `is_synthetic`, `data_origin`, and caveats. The repository's exact `data/sample_sales.csv` is recognized automatically; callers must mark other fake inputs with `synthetic_sales=True`. Preserve this distinction in the application's display and exports.
+`your_sales` carries `is_synthetic`, `data_origin`, source metadata (`sales_source` and, where applicable, `sales_environment`), and caveats. The repository's exact `data/sample_sales.csv` and Square sandbox input are recognized automatically; callers must mark other fake inputs with `synthetic_sales=True`. The Toast connection is not yet verified against a live account. Preserve this distinction in the application's display and exports.
 
 ## Inputs
 

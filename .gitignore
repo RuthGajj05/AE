@@ -5,3 +5,4 @@ reports/
 .cache/
 .pytest_cache/
 *.py[cod]
+private/
