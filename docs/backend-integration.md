@@ -37,7 +37,7 @@ report = research(
 
 ## Source agents and concurrency
 
-`strategy="multi"` is the default for `run(...)`, `research(...)`, and the advisor. Discovery targets up to eight competitor branches before the specialists start. The `official_menus`, `ordering_prices`, `yelp_reviews`, `tripadvisor_reviews`, and `google_reviews` agents then run independent Claude conversations with isolated tool state and source ledgers. Source domains and discovered branches are enforced by tools and submission validation, not just described in prompts.
+`strategy="multi"` is the default for `run(...)` and `research(...)`. Discovery targets up to eight competitor branches before the specialists start. The `official_menus`, `ordering_prices`, `yelp_reviews`, `tripadvisor_reviews`, and `google_reviews` agents then run independent Claude conversations with isolated tool state and source ledgers. Source domains and discovered branches are enforced by tools and submission validation, not just described in prompts.
 
 `max_agents` (1–6, default 3) limits active competitor specialists. `max_workers` (1–10, default 4) limits tool calls within **each** agent. They do not limit total work across simultaneous application requests or the advisor's separate own-presence agent. Use `strategy="single"` for the original one-conversation collector; it does not return the multi-agent status fields.
 
@@ -79,8 +79,6 @@ report = advise(
     owner_menu={"products": ["Butter croissant"],
                 "confirmed_complete": False, "confirmed_at": None},
     max_workers=4,
-    max_agents=3,
-    strategy="multi",
     reports_dir=Path("reports"),
     use_history=True,
     synthetic_sales=False,
@@ -89,7 +87,7 @@ report = advise(
 
 `sales_source` accepts a CSV path, `"square"`, or `"toast"`. `days=56` controls the POS lookback. POS credentials stay in the backend environment; the application does not pass them in the report. Square and Toast rows use the same calculations as CSV rows, preserving fractional item quantities.
 
-The advisor retains its parallel competitor, online-presence, and sales stages. It runs deterministic product analysis after those inputs arrive and before Claude writes advice. With no explicit owner menu, positively sold items become known products with `confirmed_complete=False` and no confirmation date. A separate competitor snapshot supplies incremental history.
+The advisor analyzes sales first, then runs competitor research (`agent/fast_competitors.py`: one quick Sonnet 5.5 agent per competitor, pricing the owner's top sellers) and online-presence research in parallel. It runs deterministic product analysis after those inputs arrive and before Claude writes advice. The per-competitor agents collect no menu/review observations, so product gaps and trends are empty unless earlier collector snapshots for the same business are in the reports directory. With no explicit owner menu, positively sold items become known products with `confirmed_complete=False` and no confirmation date. A separate competitor snapshot supplies incremental history.
 
 The returned advisor dictionary retains `advice`, `your_sales`, `your_online_presence`, and `competitors`. `competitors` contains the enriched competitor report described below; the advisor also exposes `market_intelligence`, `owner_menu`, `evidence_bundle`, and `source_coverage`. Its top-level `mode` is `advisor`, or `demo` for recognized/declared synthetic sales. Use the nested `competitors` report for the complete portable analysis bundle and its collection-mode metadata.
 

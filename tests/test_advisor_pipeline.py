@@ -239,7 +239,7 @@ class PosIntegrationTests(unittest.TestCase):
 
     def test_square_sales_flow_through_advisor_without_losing_demo_or_menu_safety(self):
         with tempfile.TemporaryDirectory() as directory, \
-            patch.object(competitor_agent, "run", return_value=facts()), \
+            patch.object(advisor.fast_competitors, "run", return_value=facts()), \
             patch.object(business_agent, "research_presence", return_value={}), \
             patch.object(advisor.pos, "fetch_square", return_value=self.ROWS) as fetch, \
             patch.dict(os.environ, {"SQUARE_ENVIRONMENT": "sandbox"}), \
@@ -252,7 +252,7 @@ class PosIntegrationTests(unittest.TestCase):
         self.assertEqual([gap["product"] for gap in result["market_intelligence"]["product_gaps"]], ["matcha latte"])
 
     def test_invalid_pos_day_range_fails_before_any_research(self):
-        with patch.object(competitor_agent, "run") as competitor_run, patch.object(advisor.pos, "fetch_square") as fetch:
+        with patch.object(advisor.fast_competitors, "run") as competitor_run, patch.object(advisor.pos, "fetch_square") as fetch:
             for days in (0, -1, True, 2.5):
                 with self.subTest(days=days), self.assertRaises(ValueError):
                     advisor.run("Owner", "bakery", "Seattle", "square", days=days)
@@ -261,15 +261,23 @@ class PosIntegrationTests(unittest.TestCase):
 
 
 class AdvisorPipelineTests(unittest.TestCase):
-    def test_three_research_stages_are_parallel_then_intelligence_precedes_advice(self):
-        barrier = Barrier(3)
+    def test_sales_first_then_research_stages_in_parallel_then_intelligence_precedes_advice(self):
+        # Sales run first so competitor agents can price the owner's top sellers;
+        # competitor and presence research then run at the same time.
+        barrier = Barrier(2)
         completed, lock = set(), Lock()
         sales = {"items": [{"item": "Pain au Chocolat", "units": 12}], "is_synthetic": False}
         def stage(name, value):
             def research(*args, **kwargs):
-                if name != "sales":
+                if name == "sales":
+                    self.assertEqual(completed, set())
+                else:
+                    self.assertIn("sales", completed)
+                    barrier.wait(timeout=3)
+                if name == "presence":
                     self.assertEqual(kwargs["max_workers"], 2)
-                barrier.wait(timeout=3)
+                if name == "competitors":
+                    self.assertEqual(args[3], ["Pain au Chocolat"])
                 with lock:
                     completed.add(name)
                 return copy.deepcopy(value)
@@ -292,7 +300,7 @@ class AdvisorPipelineTests(unittest.TestCase):
             return client.beta.messages.parse.return_value
         client.beta.messages.parse.side_effect = parse
         with tempfile.TemporaryDirectory() as directory, \
-            patch.object(competitor_agent, "run", side_effect=stage("competitors", facts())), \
+            patch.object(advisor.fast_competitors, "run", side_effect=stage("competitors", facts())), \
             patch.object(business_agent, "research_presence", side_effect=stage("presence", {"found_online": True})), \
             patch.object(business_agent, "analyze_sales", side_effect=stage("sales", sales)), \
             patch.object(competitor_agent, "analyze_report", side_effect=analyze), \
@@ -309,7 +317,7 @@ class AdvisorPipelineTests(unittest.TestCase):
         menu = OwnerMenu(products=["Matcha latte"], confirmed_complete=True, confirmed_at=TODAY)
         sales = {"items": [{"item": "Coffee", "units": 12}], "is_synthetic": True, "data_origin": "synthetic_demo"}
         with tempfile.TemporaryDirectory() as directory, \
-            patch.object(competitor_agent, "run", return_value=facts()), \
+            patch.object(advisor.fast_competitors, "run", return_value=facts()), \
             patch.object(business_agent, "research_presence", return_value={}), \
             patch.object(business_agent, "analyze_sales", return_value=sales) as sales_mock, \
             patch.object(advisor.anthropic, "Anthropic", return_value=advice_client()):
@@ -325,7 +333,7 @@ class AdvisorPipelineTests(unittest.TestCase):
 
     def test_second_advisor_run_uses_saved_competitor_history_for_trends(self):
         with tempfile.TemporaryDirectory() as directory, \
-            patch.object(competitor_agent, "run", side_effect=[facts(reviews("previous", 3)), facts(reviews("current", 6))]), \
+            patch.object(advisor.fast_competitors, "run", side_effect=[facts(reviews("previous", 3)), facts(reviews("current", 6))]), \
             patch.object(business_agent, "research_presence", return_value={}), \
             patch.object(business_agent, "analyze_sales", return_value={"items": [], "is_synthetic": False}), \
             patch.object(advisor.anthropic, "Anthropic", return_value=advice_client()):
@@ -340,7 +348,7 @@ class AdvisorPipelineTests(unittest.TestCase):
         self.assertEqual((trend["previous"]["total_reviews"], trend["current"]["total_reviews"]), (10, 10))
 
     def test_invalid_owner_menu_fails_before_research(self):
-        with patch.object(competitor_agent, "run") as competitor_run:
+        with patch.object(advisor.fast_competitors, "run") as competitor_run:
             with self.assertRaises(ValueError):
                 advisor.run("Owner Bakery", "bakery", "Seattle", "unused.csv", owner_menu={"products": [""]})
             competitor_run.assert_not_called()

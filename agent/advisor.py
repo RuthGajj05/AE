@@ -1,5 +1,6 @@
-"""Tailored advice for one business: runs the competitor research and the
-business analysis in parallel, then has Claude combine them into
+"""Tailored advice for one business: analyzes the owner's sales, researches
+nearby competitors (one quick agent per competitor, in parallel) and the
+business's own online presence, then has Claude combine them into
 recommendations specific to what this business lacks or could change.
 
 Usage:
@@ -90,37 +91,23 @@ def run(
     website: str | None = None, days: int = 56,
     *, owner_menu: OwnerMenu | dict | None = None, max_workers: int = 4,
     reports_dir: Path | str | None = None, use_history: bool = True, synthetic_sales: bool = False,
-    max_agents: int = 3, strategy: str = "multi", fast: bool = False,
 ) -> dict:
     validate_max_workers(max_workers)
-    if isinstance(max_agents, bool) or not isinstance(max_agents, int) or not 1 <= max_agents <= 6:
-        raise ValueError("max_agents must be an integer from 1 to 6")
-    if strategy not in {"multi", "single"}:
-        raise ValueError("strategy must be 'multi' or 'single'")
     _validate_days(days)
     explicit_menu = OwnerMenu.model_validate(owner_menu) if owner_menu is not None else None
     reports_dir = Path(reports_dir) if reports_dir is not None else competitor_agent.REPORTS_DIR
     start = time.monotonic()
-    # --fast: parallel per-competitor research and a faster model for the advice (see fast_competitors.py).
-    model = os.environ.get("ADVISOR_MODEL", "claude-sonnet-5-5") if fast else configured_model()
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        if fast:  # sales analysis is near-instant for a CSV, so do it first and price-check the owner's top sellers
-            sales = load_sales(sales_source, days, synthetic=synthetic_sales)
-            top_items = [i["item"] for i in sales["items"][:4]]
-            competitors_f = pool.submit(fast_competitors.run, business, business_type, location, top_items)
-            sales_f = None
-        else:
-            competitors_f = pool.submit(competitor_agent.run, business, business_type, location,
-                                        owner_menu=explicit_menu, max_workers=max_workers,
-                                        max_agents=max_agents, strategy=strategy)
-            sales_f = pool.submit(load_sales, sales_source, days, synthetic=synthetic_sales)
+    # Sales analysis comes first (a CSV takes milliseconds) so every competitor agent can
+    # price-check the owner's top sellers; competitor and presence research then run in parallel.
+    sales = load_sales(sales_source, days, synthetic=synthetic_sales)
+    top_items = [i["item"] for i in sales.get("items", [])[:4]]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        competitors_f = pool.submit(fast_competitors.run, business, business_type, location, top_items)
         presence_f = pool.submit(
             business_agent.research_presence, business, location, website, max_workers=max_workers,
-            model=fast_competitors.FAST_MODEL if fast else None,
+            model=fast_competitors.FAST_MODEL,
         )
         presence = presence_f.result()
-        if sales_f is not None:
-            sales = sales_f.result()
         competitors = competitors_f.result()
     if explicit_menu is None:
         # A transaction proves a product sold, never that the menu is complete.
@@ -139,7 +126,7 @@ def run(
     t0 = time.monotonic()
     client = anthropic.Anthropic()
     response = client.beta.messages.parse(
-        model=model,
+        model=os.environ.get("ADVISOR_MODEL") or configured_model(),
         max_tokens=16000,
         system=ADVISOR_SYSTEM,
         output_config={"effort": "medium"},
@@ -203,12 +190,9 @@ def main() -> None:
     parser.add_argument("--website", help="The business's website, if it has one")
     parser.add_argument("--owner-menu", type=Path, help="JSON owner menu; only a fresh explicit complete menu can confirm absent products")
     parser.add_argument("--max-workers", type=int, choices=range(1, 11), default=4, help="Maximum concurrent retrieval tools per research stage (default: 4)")
-    parser.add_argument("--max-agents", type=int, choices=range(1, 7), default=3, help="Maximum concurrent source specialist agents (default: 3)")
-    parser.add_argument("--strategy", choices=("multi", "single"), default="multi")
     parser.add_argument("--reports-dir", type=Path, default=competitor_agent.REPORTS_DIR, help="Directory for saved reports and matching evidence history")
     parser.add_argument("--no-history", action="store_true", help="Analyze only this run's evidence")
     parser.add_argument("--synthetic-sales", action="store_true", help="Label the supplied CSV as demonstration data")
-    parser.add_argument("--fast", action="store_true", help="Much faster: one quick agent per competitor and Sonnet 5.5 for the advice (ignores --strategy)")
     args = parser.parse_args()
 
     owner_menu = OwnerMenu.model_validate_json(args.owner_menu.read_text()) if args.owner_menu else None
@@ -216,7 +200,6 @@ def main() -> None:
         args.business, args.business_type, args.location, args.sales, args.website, args.days,
         owner_menu=owner_menu, max_workers=args.max_workers, reports_dir=args.reports_dir,
         use_history=not args.no_history, synthetic_sales=args.synthetic_sales,
-        max_agents=args.max_agents, strategy=args.strategy, fast=args.fast,
     )
 
     out = competitor_agent.save_report(report, args.reports_dir)
