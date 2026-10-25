@@ -231,7 +231,7 @@ Demo responses add `"demo": true` to each alert. `spotId` can be `null` (e.g. a 
 | `new_competitor`, `closed`, `price_change`, `hours_change`, `rating_change`, `review_trend` | business | Ruth's monitor (`agent/monitor.py`): re-research of the tracked competitors, Claude diff of the two snapshots. `detail` = before → after plus her "why it matters" line. |
 | `new_spot`, `closed`, `price_change` | consumer | The same monitor changes, public kinds only, without the owner-only advice; the same change from several owners shows once |
 | `fresh_stock` | consumer | A tracked Square item's IN_STOCK count rose by at least 10 units and at least half since the last snapshot. **Only for businesses that opted in** (`shareStockAlerts` at onboarding, or a goal like "share stock alerts"); off by default. **Never includes counts.** |
-| `low_stock` | business | A tracked item crossed below the owner's threshold (`lowStockThreshold`, default 5). Owner only; includes the count. |
+| `low_stock` | business | A tracked item fell to or below the owner's threshold (`lowStockThreshold`, default 5; same rule as Manny's `lib/inventory.ts`). Owner only; includes the count. |
 | `top_rated` | consumer | A spot became #1 for an attribute in its food type and area since the previous scoring of that area. The first scoring is a baseline. |
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, the monitor uses Ruth's `SupabaseStore` and monitor

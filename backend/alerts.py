@@ -63,7 +63,8 @@ def stock_events(previous: dict[str, float | None], items: list[dict], threshold
     """Compare a fresh inventory fetch with the last snapshot. Unknown counts never trigger anything.
 
     fresh: count rose by ≥ FRESH_MIN_UNITS and ≥ FRESH_MIN_SHARE of the previous count (0 → 12 is fresh, 20 → 25 isn't).
-    low:   count crossed below the owner's threshold (or starts below it on the first snapshot); stays quiet while low.
+    low:   count fell to or below the owner's threshold (or starts there on the first snapshot); stays quiet while low.
+           Same rule as Manny's inventoryStatus (main: lib/inventory.ts): quantity <= threshold is low.
     """
     events = []
     for item in items:
@@ -73,7 +74,7 @@ def stock_events(previous: dict[str, float | None], items: list[dict], threshold
         before = previous.get(item["variationId"])
         if before is not None and now - before >= max(FRESH_MIN_UNITS, before * FRESH_MIN_SHARE):
             events.append({"type": "fresh", "variationId": item["variationId"], "name": item["name"], "before": before, "now": now})
-        if now < threshold and (before is None or before >= threshold):
+        if now <= threshold and (before is None or before > threshold):
             events.append({"type": "low", "variationId": item["variationId"], "name": item["name"], "before": before, "now": now})
     return events
 

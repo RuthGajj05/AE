@@ -43,6 +43,9 @@ class TestStockEvents:
         assert [e["type"] for e in alerts.stock_events({"v1": 12.0}, [item("v1", 3.0)], 5)] == ["low"]
         assert [e["type"] for e in alerts.stock_events({}, [item("v1", 2.0)], 5)] == ["low"]
         assert alerts.stock_events({"v1": 3.0}, [item("v1", 2.0)], 5) == []  # already low: no repeat
+        # At the threshold counts as low, like Manny's inventoryStatus (quantity <= threshold)
+        assert [e["type"] for e in alerts.stock_events({"v1": 9.0}, [item("v1", 5.0)], 5)] == ["low"]
+        assert alerts.stock_events({"v1": 5.0}, [item("v1", 4.0)], 5) == []
 
     def test_unknown_counts_never_trigger(self):
         assert alerts.stock_events({"v1": 40.0}, [item("v1", None)], 5) == []
