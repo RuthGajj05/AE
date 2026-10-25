@@ -2,7 +2,7 @@
 #
 # GitHub only runs scheduled workflows from the default branch (main), so this
 # file has to be on main to fire. It checks out the Python pipeline from the
-# `scraping` branch, so main doesn't need the rest of the Python code.
+# `app` branch, so main doesn't need the rest of the Python code.
 #
 # Repository secrets (Settings -> Secrets and variables -> Actions):
 #   required: ANTHROPIC_API_KEY, TAVILY_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: scraping
+          ref: app
 
       - uses: actions/setup-python@v7
         with:
