@@ -14,20 +14,29 @@ export function metricValue(item, attr) {
   return item.scores[attr.id]
 }
 
+// Backend scores can be null: no review mentioned that attribute or a wait time. Null prints "—" and sorts last.
+
 /** 'top' (darkest) / 'mid' / 'low' (palest). Wait: ≤8 min darkest, 9–15 honey, >15 pale. */
 export function metricTone(attr, value) {
+  if (value == null) return 'low'
   if (isWait(attr)) return value <= 8 ? 'top' : value <= 15 ? 'mid' : 'low'
   return value >= 85 ? 'top' : value >= 70 ? 'mid' : 'low'
 }
 
 export function formatMetric(attr, value) {
+  if (value == null) return '—'
   if (isWait(attr)) return `${value} min`
   if (attr.id === AMBIANCE.id) return `${value}%`
   return String(value)
 }
 
-/** Sort comparator, best first. */
-export const bestFirst = (attr, value) => (a, b) => (isWait(attr) ? value(a) - value(b) : value(b) - value(a))
+/** Sort comparator, best first; unknown values last. */
+export const bestFirst = (attr, value) => (a, b) => {
+  const va = value(a)
+  const vb = value(b)
+  if (va == null || vb == null) return (va == null) - (vb == null)
+  return isWait(attr) ? va - vb : vb - va
+}
 
 /** 0.25 → "in 1 of 4 reviews" */
 export const mentionText = (rate) => `in 1 of ${Math.max(1, Math.round(1 / rate))} reviews`

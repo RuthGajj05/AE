@@ -9,9 +9,11 @@ import { AMBIANCE } from './metrics.js'
 // Browser key from .env.local (git-ignored). Missing → the app uses the sample places on a free fallback map.
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
-// Backend base URL. Empty → relative /api, which the Vite dev server proxies to the backend on the machine running
-// it, so anyone opening the page through a tunnel reaches that backend too.
-export const API_BASE = import.meta.env.VITE_API_URL || '/api'
+// Backend base URL. VITE_API_URL (e.g. http://localhost:8000) talks to the backend directly; empty → relative /api,
+// which the Vite dev server proxies to the backend on the machine running it, so anyone opening the page through a
+// tunnel reaches that backend too. Either way, paths below start after /api.
+const API_ROOT = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '').replace(/\/api$/, '')
+export const API_BASE = `${API_ROOT}/api`
 
 /** GET a backend endpoint as JSON, or null when the backend is down, slow or errors (callers fall back to samples). */
 async function apiGet(path) {
@@ -21,6 +23,16 @@ async function apiGet(path) {
   } catch {
     return null
   }
+}
+
+/** POST JSON and forget: a failed send never blocks the app. */
+function apiPost(path, body) {
+  fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(4000),
+  }).catch(() => {})
 }
 
 export const CAPITOL_HILL = { lat: 47.619, lng: -122.321 }
@@ -88,16 +100,39 @@ export function walkFromUser(spot) {
 /** Walking path drawn on the map: along the user's street, then up or down the spot's avenue. [{ lat, lng }] */
 export const walkPath = (spot) => [USER_LOCATION, { lat: USER_LOCATION.lat, lng: spot.lng }, { lat: spot.lat, lng: spot.lng }]
 
-const average = (values) => Math.round(values.reduce((sum, v) => sum + v, 0) / values.length)
+// Average of the 0–100 scores Claude could give; null scores (no review mentioned it) are left out.
+const average = (values) => {
+  const known = values.filter((v) => v != null)
+  return known.length ? Math.round(known.reduce((sum, v) => sum + v, 0) / known.length) : null
+}
 
 /**
- * One food type's compare data: attributes (plus Ambiance on every food type), 4 spots, and the crumbs pick. Sample
- * data for now; later the backend returns the same shape from Claude's review analysis (contract in API.md). Spots
- * get letters A–D in order, an `overall` average of the 0–100 scores, and a walk from the user.
+ * The backend's GET /api/spots → this app's compare shape (backend/API.md): up to 4 spots that have at least one
+ * score, the crumbs pick first, then best overall. Food-type labels and attributes come from the local file, which
+ * matches the backend's /api/cuisines.
  */
-export async function getCuisine(id) {
-  const cuisine = (await apiGet(`/cuisines/${encodeURIComponent(id)}`)) ?? cuisineData.cuisines.find((c) => c.id === id)
-  if (!cuisine) throw new Error(`No sample data for "${id}".`)
+function fromBackend(payload) {
+  const meta = cuisineData.cuisines.find((c) => c.id === payload?.cuisine)
+  const scored = (payload?.spots ?? []).filter((s) => Object.values(s.scores ?? {}).some((v) => v != null))
+  if (!meta || !scored.length) return null
+  const isSample = payload.source === 'demo'
+  // Demo fixtures keep the sample file's A–D order; live results lead with the pick, then best overall.
+  const ranked = isSample
+    ? scored
+    : [...scored].sort((a, b) => Number(b.pick) - Number(a.pick) || (average(Object.values(b.scores)) ?? 0) - (average(Object.values(a.scores)) ?? 0))
+  return { ...meta, spots: ranked.slice(0, 4), isSample }
+}
+
+/**
+ * One food type's compare data: attributes (plus Ambiance on every food type), 4 spots, and the crumbs pick. From the
+ * backend's review scores when it answers, otherwise the bundled sample data. Spots get letters A–D in order, an
+ * `overall` average of the 0–100 scores, and a walk from the user. `demo: true` asks the backend for its fixtures.
+ */
+export async function getCuisine(id, { demo = false } = {}) {
+  const query = new URLSearchParams({ cuisine: id, lat: CAPITOL_HILL.lat, lng: CAPITOL_HILL.lng, radiusMi: 1, ...(demo && { demo: 'true' }) })
+  const live = fromBackend(await apiGet(`/spots?${query}`))
+  const cuisine = live ?? { ...cuisineData.cuisines.find((c) => c.id === id), isSample: true }
+  if (!cuisine.spots) throw new Error(`No sample data for "${id}".`)
   const spots = cuisine.spots.map((s, i) => {
     const walk = walkFromUser(s)
     return { ...s, letter: 'ABCD'[i], overall: average(Object.values(s.scores)), walk, distanceMi: walk.miles }
@@ -114,8 +149,8 @@ export async function getCuisine(id) {
 export const directionsUrl = (spot) =>
   `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&travelmode=walking`
 
-// Pick events and saved spots live in this browser only (localStorage) until the backend has POST /api/picks.
-// Storage can be missing (private mode), so every read and write is wrapped.
+// Pick events are sent to the backend (POST /api/picks, anonymous) and also kept in this browser (localStorage) for
+// the sample You tab; saved spots stay local. Storage can be missing (private mode), so every read and write is wrapped.
 const PICKS_KEY = 'crumbs.picks'
 const SAVED_KEY = 'crumbs.saved'
 
@@ -138,6 +173,7 @@ function writeList(key, list) {
 
 /** Anonymous pick: which spot a user chose after comparing. No user info is stored. */
 export function recordPick({ cuisine, chosenSpotId, comparedSpotIds }) {
+  apiPost('/picks', { cuisine, chosenSpotId, comparedSpotIds })
   writeList(PICKS_KEY, [...readList(PICKS_KEY), { cuisine, chosenSpotId, comparedSpotIds, timestamp: new Date().toISOString() }])
 }
 
@@ -153,12 +189,31 @@ export function toggleSaved(spotId) {
   return next.includes(spotId)
 }
 
+/** The backend's insights breakdown → the `you` scores this app's business report reads. */
+function youFromBreakdown(you, breakdown) {
+  const row = (id) => breakdown.find((r) => r.attribute === id)?.you
+  const scores = Object.fromEntries(Object.keys(you.scores).map((id) => [id, row(id) ?? you.scores[id]]))
+  return { ...you, scores, waitMinutes: row('wait') ?? you.waitMinutes, ambiancePct: row('ambiance') ?? you.ambiancePct }
+}
+
 /**
- * The business side (You tab): picks won and lost, why rivals won, and the breakdown vs the area. Built from
- * sample data plus this browser's pick events for now; later one backend call (contract in API.md).
+ * The business side (You tab): picks won and lost, why rivals won, and the breakdown vs the area. From the backend's
+ * rivals + insights for the sample business (its picks table already includes this browser's taps), compared against
+ * the backend's sample spots; otherwise built from the bundled sample data plus this browser's pick events.
  */
 export async function getBusinessReport() {
-  return buildBusinessReport(businessData, await getCuisine(businessData.you.cuisine), readPicks())
+  const { id, cuisine } = businessData.you
+  const [rivals, insights] = await Promise.all([apiGet(`/business/${id}/rivals?days=7`), apiGet(`/business/${id}/insights`)])
+  if (rivals && insights?.breakdown?.length) {
+    const data = {
+      ...businessData,
+      you: youFromBreakdown(businessData.you, insights.breakdown),
+      picksWon: rivals.picksWon,
+      picksLostTo: Object.fromEntries(rivals.rivals.map((r) => [r.spotId, r.picksWon])),
+    }
+    return buildBusinessReport(data, await getCuisine(cuisine, { demo: true }), [])
+  }
+  return buildBusinessReport(businessData, await getCuisine(cuisine), readPicks())
 }
 
 /**

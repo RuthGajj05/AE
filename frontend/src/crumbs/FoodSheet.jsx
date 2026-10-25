@@ -58,7 +58,7 @@ export function FoodSheet({ cuisine, view, onView, sort, onSort, spotId, onOpenS
               <h2 className="food-title">{cuisine.label}</h2>
               <p className="food-sub">
                 {cuisine.spots.length} spots · {cuisine.reviewsRead.toLocaleString()} reviews read
-                <span className="sample-tag">sample data</span>
+                {cuisine.isSample && <span className="sample-tag">sample data</span>}
               </p>
             </div>
             <button className="pill-btn" onClick={() => onView(view === 'list' ? 'compare' : 'list')}>
