@@ -100,6 +100,50 @@ The advisor also accepts `--website`, `--max-workers`, `--reports-dir`, and `--n
 
 Run just the competitor part with `python agent/fast_competitors.py "Test Bakery" bakery "Capitol Hill, Seattle"`.
 
+### Email the report
+
+Add `--email you@example.com` to send the finished report as an HTML email (plain-text version included):
+
+```sh
+.venv/bin/python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv --email owner@example.com
+```
+
+Preview it without sending anything (writes `reports/email-preview.html`): add `--email-preview`.
+Send a saved report later: `python agent/notify.py reports/<file>-advisor.json owner@example.com`.
+
+Setup, in `.env`. **Resend** (same keys the competitor alerts use) is used if set: `RESEND_API_KEY` and `RESEND_FROM` (Resend's test sender only delivers to your own account email until you verify a domain). Otherwise any SMTP provider works; the Gmail example:
+
+```
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=<an app password>      # Google Account > Security > 2-Step Verification > App passwords. Never your real password.
+# optional: SMTP_HOST=smtp.gmail.com  SMTP_PORT=587  EMAIL_FROM="LocalEdge <you@gmail.com>"
+```
+
+Notes:
+- The report is saved before the email is sent, so a mail problem never loses it.
+- Exactly one recipient; lists and anything that could inject headers are rejected.
+- Report text comes from web pages and model output, so it is HTML-escaped. No tracking pixels or links.
+- Tests (no network, SMTP mocked): `python tests/test_notify.py`.
+- With `--business-id`, Supabase still stores the report; `--email` sends a copy as well.
+
+### Report-by-email API
+
+A small standalone service: a user enters their business and email, the report is researched in the background (no sales file needed) and emailed when ready, so nobody waits on a loading screen.
+
+```sh
+.venv/bin/uvicorn api:app --app-dir agent --port 8100
+```
+
+| Endpoint | |
+|---|---|
+| `POST /api/report-email` | `{business, business_type, location, email, website?}` → `202 {id, status: "running"}` right away |
+| `GET /api/report-email/{id}` | `{status: running/done/error, emailed, error, report}` (the report is included when done) |
+| `GET /api/health` | shows whether email is configured |
+
+Errors are `{"error": "plain-English message"}`. Without sales data the advice rests on competitor research and the owner's online presence, and dollar estimates are left blank.
+
+Because this can spend API credit and send email, it is rate limited: one report per address per 10 minutes (`EMAIL_COOLDOWN_SECS`) and 30 per hour overall (`MAX_REPORTS_PER_HOUR`). Jobs are kept in memory, so they are lost on restart (the report JSON is also saved in `reports/`). Tests (mocked, no cost, nothing sent): `python tests/test_api.py`.
+
 ### Pull sales from Square or Toast
 
 Instead of a CSV, pass `--sales square` or `--sales toast`. `--days 56` sets the lookback period for POS sales; the default is 56 days. Both APIs produce the same item-level row format used by CSV analysis, including fractional quantities.
@@ -240,6 +284,12 @@ The fixture contains 12 dated review texts in each comparison period, with posit
 - History is scoped by business name, location, and collection mode. Imported evidence is kept separate from live collection. Repeated observations are deduplicated; saving a report again does not create growth.
 - Collection coverage may be incomplete and unrepresentative. Source URLs, branch identity, dates, and text are retained; automated classification still needs review. Import only feedback you have permission to process.
 - Review mentions do not establish sales or financial impact. Advisor estimates must remain labeled scenarios grounded in the owner's data and assumptions. Transaction timing alone does not prove stockouts or operating hours; validate those with the owner.
+
+## More docs
+
+- [`docs/backend-integration.md`](docs/backend-integration.md): Python imports, report fields, and replaying evidence.
+- [`docs/email-reports.md`](docs/email-reports.md): email delivery and the report API: what was built, measured timings, known limits.
+- [`docs/frontend-integration.md`](docs/frontend-integration.md): how the frontend adds "Email me this report".
 
 ## Tests
 

@@ -3,3 +3,5 @@ tavily-python
 python-dotenv
 httpx
 pydantic>=2,<3
+fastapi
+uvicorn
