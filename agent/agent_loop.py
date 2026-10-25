@@ -25,7 +25,14 @@ def _run_tool(tools_by_name: dict, call) -> dict:
         return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {e}", "is_error": True}
 
 
-def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) -> dict:
+# Models that accept the server-side refusal fallback (see the Claude API docs); others run without it.
+FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-sonnet-5-5"}
+
+
+def run_agent(
+    system: str, prompt: str, tools: list, submit_tool, label: str,
+    model: str = MODEL, effort: str = "medium", max_turns: int = MAX_TURNS,
+) -> dict:
     """Run the agent and return the input of its successful `submit_tool` call."""
     client = anthropic.Anthropic()
     tools_by_name = {t.name: t for t in tools}
@@ -36,17 +43,17 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) ->
         print(f"[{label}] {msg}", file=sys.stderr)
 
     with ThreadPoolExecutor(max_workers=10) as pool:
-        for _ in range(MAX_TURNS):
+        for _ in range(max_turns):
             t0 = time.monotonic()
+            extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if model in FALLBACK_MODELS else {}
             response = client.beta.messages.create(
-                model=MODEL,
+                model=model,
                 max_tokens=16000,
                 system=system,
                 tools=[t.to_dict() for t in tools],
-                output_config={"effort": "medium"},
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
+                output_config={"effort": effort},
                 messages=messages,
+                **extra,
             )
             model_secs = time.monotonic() - t0
             if response.stop_reason == "refusal":
@@ -61,6 +68,9 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) ->
             t0 = time.monotonic()
             results = list(pool.map(lambda c: _run_tool(tools_by_name, c), calls))
             log(f"   model {model_secs:.0f}s, {len(calls)} tool call(s) {time.monotonic() - t0:.0f}s")
+            for c, r in zip(calls, results):
+                if r.get("is_error"):
+                    log(f"   ! {c.name} failed: {str(r['content'])[:200]}")
             messages.append({"role": "user", "content": results})
 
             for c, r in zip(calls, results):
@@ -68,6 +78,6 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) ->
                     log(f"done in {time.monotonic() - start:.0f}s")
                     return dict(c.input)
         else:
-            raise RuntimeError(f"{label}: did not finish within {MAX_TURNS} turns")
+            raise RuntimeError(f"{label}: did not finish within {max_turns} turns")
 
     raise RuntimeError(f"{label}: finished without calling {submit_tool.name}")
