@@ -1,0 +1,71 @@
+{
+  "source": "src/data/capitol-hill-bakery-report.json",
+  "geocoder": "US Census (Public_AR_Current)",
+  "generatedAt": "2026-10-25T20:07:04.447Z",
+  "spots": [
+    {
+      "name": "Bakery Nouveau (Capitol Hill)",
+      "address": "137 15th Ave E, Seattle, WA 98112",
+      "lat": 47.618954770173,
+      "lng": -122.312821367573,
+      "matchedAddress": "137 15TH AVE E, SEATTLE, WA, 98112"
+    },
+    {
+      "name": "The French Guys",
+      "address": "810 E Roy St, Seattle, WA 98102",
+      "lat": 47.625173125112,
+      "lng": -122.32187210121,
+      "matchedAddress": "810 E ROY ST, SEATTLE, WA, 98102"
+    },
+    {
+      "name": "Nuflours Bakery",
+      "address": "518 15th Ave E, Seattle, WA 98112",
+      "lat": 47.623478497097,
+      "lng": -122.312537226439,
+      "matchedAddress": "518 15TH AVE E, SEATTLE, WA, 98112"
+    },
+    {
+      "name": "Hello Robin (Capitol Hill)",
+      "address": "522 19th Ave E, Seattle, WA 98112",
+      "lat": 47.623512655322,
+      "lng": -122.30721696865,
+      "matchedAddress": "522 19TH AVE E, SEATTLE, WA, 98112"
+    },
+    {
+      "name": "Macrina Bakery – Aloha Café (Capitol Hill)",
+      "address": "746 19th Ave E, Seattle, WA 98112",
+      "lat": 47.625638045281,
+      "lng": -122.307230464145,
+      "matchedAddress": "746 19TH AVE E, SEATTLE, WA, 98112"
+    },
+    {
+      "name": "Mt. Bagel",
+      "address": "801 26th Ave E, Seattle, WA 98112",
+      "lat": 47.625971001414,
+      "lng": -122.298831910136,
+      "matchedAddress": "801 26TH AVE E, SEATTLE, WA, 98112"
+    },
+    {
+      "name": "Rubinstein Bagels (Capitol Hill)",
+      "address": "403 15th Ave E, Seattle, WA 98112",
+      "lat": 47.62214469579,
+      "lng": -122.312728384539,
+      "matchedAddress": "403 15TH AVE E, SEATTLE, WA, 98112"
+    },
+    {
+      "name": "Cinnaholic",
+      "address": "816 E Pike St, Seattle, WA 98122",
+      "lat": 47.614123352566,
+      "lng": -122.321839436357,
+      "matchedAddress": "816 E PIKE ST, SEATTLE, WA, 98122"
+    },
+    {
+      "name": "Wild Rye Bakery",
+      "address": "1017 Olive Way, Seattle, WA 98101",
+      "lat": 47.615175331572,
+      "lng": -122.331222602879,
+      "matchedAddress": "1017 OLIVE WAY, SEATTLE, WA, 98101"
+    }
+  ],
+  "failed": []
+}

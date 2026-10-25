@@ -1,0 +1,15 @@
+{
+  "note": "Sample data for the demo when there's no Google Maps key. Ratings and counts are made up; addresses are approximate.",
+  "places": [
+    { "id": "mock-victrola", "name": "Victrola Coffee Roasters", "cuisine": "Coffee Shop", "priceLevel": "INEXPENSIVE", "rating": 4.5, "ratingCount": 1100, "address": "310 E Pike St, Seattle", "lat": 47.614, "lng": -122.3268 },
+    { "id": "mock-molly-moons", "name": "Molly Moon's Homemade Ice Cream", "cuisine": "Ice Cream Shop", "priceLevel": "INEXPENSIVE", "rating": 4.6, "ratingCount": 1500, "address": "917 E Pine St, Seattle", "lat": 47.6154, "lng": -122.3206 },
+    { "id": "mock-oddfellows", "name": "Oddfellows Cafe + Bar", "cuisine": "American Restaurant", "priceLevel": "MODERATE", "rating": 4.4, "ratingCount": 1900, "address": "1525 10th Ave, Seattle", "lat": 47.6148, "lng": -122.3191 },
+    { "id": "mock-dicks", "name": "Dick's Drive-In", "cuisine": "Hamburger Restaurant", "priceLevel": "INEXPENSIVE", "rating": 4.5, "ratingCount": 4800, "address": "115 Broadway E, Seattle", "lat": 47.6194, "lng": -122.3212 },
+    { "id": "mock-tacos-chukis", "name": "Tacos Chukis", "cuisine": "Mexican Restaurant", "priceLevel": "INEXPENSIVE", "rating": 4.6, "ratingCount": 1300, "address": "219 Broadway E, Seattle", "lat": 47.6205, "lng": -122.3209 },
+    { "id": "mock-rione-xiii", "name": "Rione XIII", "cuisine": "Italian Restaurant", "priceLevel": "EXPENSIVE", "rating": 4.5, "ratingCount": 900, "address": "401 15th Ave E, Seattle", "lat": 47.6226, "lng": -122.3127 },
+    { "id": "mock-nue", "name": "Nue", "cuisine": "Restaurant", "priceLevel": "MODERATE", "rating": 4.5, "ratingCount": 1200, "address": "1519 14th Ave, Seattle", "lat": 47.6147, "lng": -122.3145 },
+    { "id": "mock-poquitos", "name": "Poquitos", "cuisine": "Mexican Restaurant", "priceLevel": "MODERATE", "rating": 4.4, "ratingCount": 2600, "address": "1000 E Pike St, Seattle", "lat": 47.6139, "lng": -122.3199 },
+    { "id": "mock-pettirosso", "name": "Café Pettirosso", "cuisine": "Cafe", "priceLevel": "INEXPENSIVE", "rating": 4.4, "ratingCount": 700, "address": "1101 E Pike St, Seattle", "lat": 47.6138, "lng": -122.3176 },
+    { "id": "mock-glos", "name": "Glo's", "cuisine": "Breakfast Restaurant", "priceLevel": "MODERATE", "rating": 4.5, "ratingCount": 1000, "address": "1621 E Olive Way, Seattle", "lat": 47.6181, "lng": -122.3251 }
+  ]
+}

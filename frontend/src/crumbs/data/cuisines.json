@@ -1,0 +1,95 @@
+{
+  "note": "Sample data. Spot names are made up so no real business gets fake scores; phone numbers are 555 fictional numbers. `scores` are 0-100 review scores (higher is better). Wait time is `waitMinutes` (lower is better). Ambiance is `ambiancePct` (% of vibe mentions that are positive) and `ambianceMentionRate` (share of reviews that mention it). Later these come from Claude reading reviews; keep this shape.",
+  "cuisines": [
+    {
+      "id": "sushi",
+      "label": "Sushi",
+      "pickLine": "good rice and fish, short waits",
+      "attributes": [
+        {"id": "rice", "label": "Rice"},
+        {"id": "fish", "label": "Fish"},
+        {"id": "seaweed", "label": "Seaweed"},
+        {"id": "value", "label": "Value"},
+        {"id": "wait", "label": "Wait time", "unit": "min"}
+      ],
+      "spots": [
+        {"id": "sushi-hikari", "name": "Hikari Sushi Bar", "lat": 47.6152, "lng": -122.3185, "price": "$$$", "street": "E Pike St", "openUntil": "10 PM", "phone": "(206) 555-0101", "reviewCount": 412, "pick": true, "scores": {"rice": 93, "fish": 91, "seaweed": 84, "value": 72}, "waitMinutes": 9, "ambiancePct": 81, "ambianceMentionRate": 0.25, "bestAt": "Best rice", "reason": "Reviewers keep praising the warm, well-seasoned rice."},
+        {"id": "sushi-umi", "name": "Umi Counter", "lat": 47.6229, "lng": -122.3132, "price": "$$$$", "street": "15th Ave E", "openUntil": "11 PM", "phone": "(206) 555-0102", "reviewCount": 298, "pick": false, "scores": {"rice": 86, "fish": 95, "seaweed": 80, "value": 58}, "waitMinutes": 16, "ambiancePct": 88, "ambianceMentionRate": 0.5, "bestAt": "Freshest fish", "reason": "Called the freshest fish on the Hill, but it's pricey."},
+        {"id": "sushi-nori-house", "name": "Nori House", "lat": 47.6168, "lng": -122.3237, "price": "$$", "street": "E Olive Way", "openUntil": "9 PM", "phone": "(206) 555-0103", "reviewCount": 236, "pick": false, "scores": {"rice": 74, "fish": 76, "seaweed": 92, "value": 81}, "waitMinutes": 12, "ambiancePct": 70, "ambianceMentionRate": 0.2, "bestAt": "Fresh nori", "reason": "Hand rolls come with crisp nori wrapped right before serving."},
+        {"id": "sushi-pike-roll", "name": "Pike Roll Co.", "lat": 47.6137, "lng": -122.3262, "price": "$", "street": "Bellevue Ave", "openUntil": "9:30 PM", "phone": "(206) 555-0104", "reviewCount": 301, "pick": false, "scores": {"rice": 68, "fish": 66, "seaweed": 70, "value": 93}, "waitMinutes": 7, "ambiancePct": 58, "ambianceMentionRate": 0.15, "bestAt": "Best value", "reason": "Big rolls for the price and fast counter service."}
+      ]
+    },
+    {
+      "id": "ramen",
+      "label": "Ramen",
+      "pickLine": "rich broth, tender chashu",
+      "attributes": [
+        {"id": "broth", "label": "Broth"},
+        {"id": "noodles", "label": "Noodles"},
+        {"id": "egg", "label": "Egg"},
+        {"id": "chashu", "label": "Chashu"},
+        {"id": "value", "label": "Value"}
+      ],
+      "spots": [
+        {"id": "ramen-tonkotsu-hill", "name": "Tonkotsu Hill", "lat": 47.6201, "lng": -122.3198, "price": "$$", "street": "Broadway E", "openUntil": "11 PM", "phone": "(206) 555-0111", "reviewCount": 520, "pick": true, "scores": {"broth": 94, "noodles": 88, "egg": 86, "chashu": 90, "value": 76}, "waitMinutes": 13, "ambiancePct": 79, "ambianceMentionRate": 0.33, "bestAt": "Richest broth", "reason": "The 12-hour pork broth comes up in almost every review."},
+        {"id": "ramen-menya-kaze", "name": "Menya Kaze", "lat": 47.6146, "lng": -122.3168, "price": "$$", "street": "12th Ave", "openUntil": "10 PM", "phone": "(206) 555-0112", "reviewCount": 344, "pick": false, "scores": {"broth": 85, "noodles": 93, "egg": 80, "chashu": 78, "value": 74}, "waitMinutes": 15, "ambiancePct": 74, "ambianceMentionRate": 0.25, "bestAt": "Best noodles", "reason": "House-made noodles with a springy bite people love."},
+        {"id": "ramen-ajitama", "name": "Ajitama Bar", "lat": 47.6178, "lng": -122.3121, "price": "$$", "street": "15th Ave", "openUntil": "10 PM", "phone": "(206) 555-0113", "reviewCount": 198, "pick": false, "scores": {"broth": 80, "noodles": 79, "egg": 95, "chashu": 74, "value": 72}, "waitMinutes": 18, "ambiancePct": 86, "ambianceMentionRate": 0.33, "bestAt": "Best egg", "reason": "Jammy marinated eggs are the thing to order here."},
+        {"id": "ramen-slurp-shop", "name": "Slurp Shop", "lat": 47.6189, "lng": -122.3247, "price": "$", "street": "E Denny Way", "openUntil": "9 PM", "phone": "(206) 555-0114", "reviewCount": 276, "pick": false, "scores": {"broth": 72, "noodles": 75, "egg": 70, "chashu": 68, "value": 92}, "waitMinutes": 7, "ambiancePct": 60, "ambianceMentionRate": 0.15, "bestAt": "Best value", "reason": "Solid bowls under $14 and quick turnover at lunch."}
+      ]
+    },
+    {
+      "id": "steak",
+      "label": "Steak",
+      "pickLine": "spot-on cook, great service",
+      "attributes": [
+        {"id": "cook", "label": "Cook"},
+        {"id": "cut", "label": "Cut quality"},
+        {"id": "sides", "label": "Sides"},
+        {"id": "value", "label": "Value"},
+        {"id": "service", "label": "Service"}
+      ],
+      "spots": [
+        {"id": "steak-ember-bone", "name": "Ember & Bone", "lat": 47.6143, "lng": -122.3155, "price": "$$$$", "street": "E Pike St", "openUntil": "11 PM", "phone": "(206) 555-0121", "reviewCount": 288, "pick": true, "scores": {"cook": 93, "cut": 92, "sides": 82, "value": 68, "service": 91}, "waitMinutes": 12, "ambiancePct": 91, "ambianceMentionRate": 0.5, "bestAt": "Perfect cook", "reason": "Steaks land at the exact temperature reviewers ordered."},
+        {"id": "steak-broadway-chop", "name": "Broadway Chophouse", "lat": 47.6175, "lng": -122.3211, "price": "$$$$", "street": "Broadway", "openUntil": "10 PM", "phone": "(206) 555-0122", "reviewCount": 351, "pick": false, "scores": {"cook": 87, "cut": 95, "sides": 78, "value": 60, "service": 85}, "waitMinutes": 15, "ambiancePct": 87, "ambianceMentionRate": 0.5, "bestAt": "Best cuts", "reason": "Dry-aged cuts get called the best in the neighborhood."},
+        {"id": "steak-pine-grill", "name": "Pine Street Grill", "lat": 47.615, "lng": -122.324, "price": "$$$", "street": "E Pine St", "openUntil": "10 PM", "phone": "(206) 555-0123", "reviewCount": 164, "pick": false, "scores": {"cook": 80, "cut": 78, "sides": 90, "value": 76, "service": 78}, "waitMinutes": 10, "ambiancePct": 80, "ambianceMentionRate": 0.33, "bestAt": "Best sides", "reason": "The creamed corn and crispy potatoes steal the show."},
+        {"id": "steak-hill-frites", "name": "Hill Steak Frites", "lat": 47.6214, "lng": -122.3135, "price": "$$", "street": "15th Ave E", "openUntil": "9 PM", "phone": "(206) 555-0124", "reviewCount": 209, "pick": false, "scores": {"cook": 76, "cut": 72, "sides": 74, "value": 92, "service": 82}, "waitMinutes": 9, "ambiancePct": 73, "ambianceMentionRate": 0.25, "bestAt": "Best value", "reason": "Steak frites for under $30, and it's still cooked right."}
+      ]
+    },
+    {
+      "id": "pizza",
+      "label": "Pizza",
+      "pickLine": "chewy crust, bright sauce",
+      "attributes": [
+        {"id": "crust", "label": "Crust"},
+        {"id": "sauce", "label": "Sauce"},
+        {"id": "toppings", "label": "Toppings"},
+        {"id": "value", "label": "Value"},
+        {"id": "wait", "label": "Wait time", "unit": "min"}
+      ],
+      "spots": [
+        {"id": "pizza-blistered-pie", "name": "Blistered Pie Co.", "lat": 47.616, "lng": -122.3195, "price": "$$", "street": "E Pine St", "openUntil": "11 PM", "phone": "(206) 555-0131", "reviewCount": 467, "pick": true, "scores": {"crust": 95, "sauce": 88, "toppings": 84, "value": 80}, "waitMinutes": 14, "ambiancePct": 76, "ambianceMentionRate": 0.25, "bestAt": "Best crust", "reason": "Leopard-spotted, chewy crust shows up in most 5-star reviews."},
+        {"id": "pizza-red-sauce", "name": "Red Sauce Slice", "lat": 47.6198, "lng": -122.3215, "price": "$", "street": "Broadway E", "openUntil": "2 AM", "phone": "(206) 555-0132", "reviewCount": 389, "pick": false, "scores": {"crust": 78, "sauce": 93, "toppings": 76, "value": 90}, "waitMinutes": 6, "ambiancePct": 64, "ambianceMentionRate": 0.2, "bestAt": "Best sauce", "reason": "Sweet, garlicky sauce and slices ready in minutes."},
+        {"id": "pizza-topping-theory", "name": "Topping Theory", "lat": 47.6221, "lng": -122.315, "price": "$$", "street": "E Republican St", "openUntil": "10 PM", "phone": "(206) 555-0133", "reviewCount": 152, "pick": false, "scores": {"crust": 80, "sauce": 79, "toppings": 94, "value": 72}, "waitMinutes": 19, "ambiancePct": 85, "ambianceMentionRate": 0.33, "bestAt": "Best toppings", "reason": "Creative, generous toppings, though weekends get slow."},
+        {"id": "pizza-olive-way", "name": "Olive Way Pizza", "lat": 47.6183, "lng": -122.3262, "price": "$", "street": "E Olive Way", "openUntil": "12 AM", "phone": "(206) 555-0134", "reviewCount": 233, "pick": false, "scores": {"crust": 70, "sauce": 72, "toppings": 70, "value": 94}, "waitMinutes": 5, "ambiancePct": 52, "ambianceMentionRate": 0.1, "bestAt": "Best value", "reason": "$4 slices and almost no wait at the counter."}
+      ]
+    },
+    {
+      "id": "tacos",
+      "label": "Tacos",
+      "pickLine": "fresh tortillas, juicy al pastor",
+      "attributes": [
+        {"id": "tortilla", "label": "Tortilla"},
+        {"id": "meat", "label": "Meat"},
+        {"id": "salsa", "label": "Salsa"},
+        {"id": "value", "label": "Value"},
+        {"id": "wait", "label": "Wait time", "unit": "min"}
+      ],
+      "spots": [
+        {"id": "tacos-maiz", "name": "Maíz Taquería", "lat": 47.6207, "lng": -122.3204, "price": "$", "street": "Broadway E", "openUntil": "10 PM", "phone": "(206) 555-0141", "reviewCount": 512, "pick": true, "scores": {"tortilla": 94, "meat": 90, "salsa": 86, "value": 88}, "waitMinutes": 11, "ambiancePct": 72, "ambianceMentionRate": 0.2, "bestAt": "Best tortillas", "reason": "Fresh-pressed corn tortillas, made to order."},
+        {"id": "tacos-al-pastor-hill", "name": "Al Pastor Hill", "lat": 47.6141, "lng": -122.319, "price": "$", "street": "E Pike St", "openUntil": "1 AM", "phone": "(206) 555-0142", "reviewCount": 301, "pick": false, "scores": {"tortilla": 82, "meat": 95, "salsa": 84, "value": 86}, "waitMinutes": 15, "ambiancePct": 66, "ambianceMentionRate": 0.15, "bestAt": "Best meat", "reason": "The al pastor carved off the spit gets raves."},
+        {"id": "tacos-salsa-roja", "name": "Salsa Roja", "lat": 47.6155, "lng": -122.3138, "price": "$$", "street": "15th Ave", "openUntil": "9 PM", "phone": "(206) 555-0143", "reviewCount": 187, "pick": false, "scores": {"tortilla": 78, "meat": 80, "salsa": 95, "value": 74}, "waitMinutes": 12, "ambiancePct": 83, "ambianceMentionRate": 0.25, "bestAt": "Best salsa", "reason": "A six-salsa bar that reviewers call addictive."},
+        {"id": "tacos-window", "name": "Taco Window", "lat": 47.6186, "lng": -122.3229, "price": "$", "street": "E Denny Way", "openUntil": "11 PM", "phone": "(206) 555-0144", "reviewCount": 244, "pick": false, "scores": {"tortilla": 70, "meat": 74, "salsa": 72, "value": 92}, "waitMinutes": 4, "ambiancePct": 55, "ambianceMentionRate": 0.1, "bestAt": "Fastest", "reason": "Walk-up window, tacos in under five minutes."}
+      ]
+    }
+  ]
+}

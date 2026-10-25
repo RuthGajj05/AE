@@ -1,0 +1,17 @@
+{
+  "note": "Sample data for the business side (the You tab). 'you' is a made-up sushi shop compared against the 4 sample sushi spots. Picks are crumbs users who compared spots, then tapped Go here. Later the backend sends this from real pick events.",
+  "period": "last 7 days",
+  "periodDays": 7,
+  "area": "Capitol Hill",
+  "you": {
+    "id": "biz-tamago",
+    "name": "Tamago Sushi",
+    "cuisine": "sushi",
+    "scores": { "rice": 78, "fish": 80, "seaweed": 94, "value": 85 },
+    "waitMinutes": 18,
+    "ambiancePct": 62,
+    "ambianceMentionRate": 0.25
+  },
+  "picksWon": 9,
+  "picksLostTo": { "sushi-hikari": 8, "sushi-umi": 3, "sushi-pike-roll": 2, "sushi-nori-house": 1 }
+}
