@@ -27,6 +27,8 @@ GOOGLE_PLACES_API_KEY=...
 
 Progress prints as the agent searches. The report is saved to `reports/<business>-<date>.json`.
 
+See [`examples/capitol-hill-bakery-report.json`](examples/capitol-hill-bakery-report.json) for a sample report: a test run for a hypothetical bakery on Capitol Hill, Seattle.
+
 ## Files
 
 - `agent/competitor_agent.py`: the agent (Claude + Tavily tools + report schema)
