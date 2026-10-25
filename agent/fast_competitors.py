@@ -29,9 +29,13 @@ from pydantic import BaseModel, Field
 if __package__:
     from . import competitor_agent as base
     from .agent_loop import run_agent
+    from .evidence_store import normalized
+    from .market_intelligence import EvidenceBundle, MenuObservation
 else:
     import competitor_agent as base
     from agent_loop import run_agent
+    from evidence_store import normalized
+    from market_intelligence import EvidenceBundle, MenuObservation
 
 FAST_MODEL = os.environ.get("FAST_MODEL", "claude-sonnet-5-5")  # claude-haiku-5-5 is faster still but less careful (it once took a delivery-app rating for the shop's own)
 PICK_MODEL = os.environ.get("PICK_MODEL", "claude-sonnet-5-5")  # short call, so a stronger model costs only a few seconds
@@ -48,6 +52,13 @@ class Picks(BaseModel):
     competitors: list[Pick]
 
 
+class MenuItem(BaseModel):
+    product: str = Field(description="Item name exactly as written on the page")
+    category: str = Field(description="Plain generic name, lowercase, e.g. 'almond croissant' for 'Twice-Baked Almond Croissant'")
+    price: str | None = Field(None, description="Price as listed, e.g. '$4.75'")
+    source_url: str = Field(description="The read_pages URL where the item appears")
+
+
 @beta_tool
 def submit_competitor(
     name: str,
@@ -62,6 +73,7 @@ def submit_competitor(
     specialties: list[str] | None = None,
     sources: list[str] | None = None,
     caveats: list[str] | None = None,
+    menu_items: list[MenuItem] | None = None,
 ) -> str:
     """Submit your findings for this one competitor. Call exactly once. Leave a field empty/null if it was not found.
 
@@ -78,6 +90,7 @@ def submit_competitor(
         specialties: What it is known for.
         sources: Up to 3 URLs this entry is mainly based on.
         caveats: Short notes on what you could not verify (missing prices, rating may belong to another branch).
+        menu_items: Every product listed on a menu page you read with read_pages (up to 40), verbatim, each with a generic category.
     """
     return "Received."
 
@@ -99,7 +112,13 @@ Then call submit_competitor once.
 
 Rules: only report what you saw in a tool result, list up to 3 source URLs, never estimate a price or rating, and leave a field empty (and say why in caveats) if it wasn't found.
 Yelp and TripAdvisor pages can't be read with read_pages, only their search snippets. If a rating may belong to another branch, say so in caveats.
-Keep every field short: price_points like 'Croissant: $4.75', praised_for and complaints as short phrases."""
+Keep every field short: price_points like 'Croissant: $4.75', praised_for and complaints as short phrases.
+
+menu_items: list the products on any menu page you read with read_pages (up to 40), with the name exactly as written there and that page's URL.
+Only items from pages you read: not from search snippets, delivery apps you didn't read, or memory. Items that aren't on the page get discarded.
+Give each a category: the plain generic name a customer would use, lowercase, without brand names or adjectives
+('Twice-Baked Almond Croissant' -> 'almond croissant', 'Sea Salt Choc Chip' -> 'chocolate chip cookie', 'Pain au Chocolat' -> 'chocolate croissant').
+If an item is the same kind of product as one of the owner's items listed below, use the owner's item name (lowercase) as the category."""
 
 
 def _discover(business_type: str, location: str) -> tuple[str, str]:
@@ -123,20 +142,52 @@ def _pick(business: str, business_type: str, location: str, osm: str, web: str) 
     return resp.parsed_output.competitors[:MAX_COMPETITORS]
 
 
-def _research_one(pick: Pick, business_type: str, location: str, items: list[str]) -> dict:
+def _research_one(pick: Pick, business_type: str, location: str, items: list[str],
+                  owner_products: list[str]) -> dict:
     prompt = f"Competitor: {pick.name}\nAddress: {pick.address or 'unknown'}\nWebsite: {pick.website or 'unknown'}\nType: {business_type}\nArea: {location}"
     if items:
         prompt += f"\nFind prices for these items first (the owner sells them; use the closest equivalent on this menu): {', '.join(items)}"
-    return run_agent(
-        ONE_SYSTEM, prompt, [base.search_web, base.read_pages, submit_competitor], submit_competitor,
-        label=pick.name[:14], model=FAST_MODEL, effort="low", max_turns=6,
-    )
+    if owner_products:
+        prompt += f"\nOwner's items (for menu_items categories): {', '.join(owner_products)}"
+    # A session per competitor records exactly which pages this agent read, so its
+    # menu items can be checked against them (the same check the source specialists use).
+    with base.research_session() as session:
+        result = run_agent(
+            ONE_SYSTEM, prompt, [base.search_web, base.read_pages, submit_competitor], submit_competitor,
+            label=pick.name[:14], model=FAST_MODEL, effort="low", max_turns=6,
+        )
+        result["_menu_observations"], result["_menu_dropped"] = _verified_menu(result, pick, session.ledger)
+    return result
 
 
-def run(business: str, business_type: str, location: str, items: list[str] | None = None) -> dict:
-    """`items` are the owner's best sellers: every competitor is asked for the price of those."""
+def _verified_menu(result: dict, pick: Pick, ledger) -> tuple[list[dict], int]:
+    """Keep menu items that appear verbatim on a page this agent read; drop the rest."""
+    items = result.pop("menu_items", None) or []
+    name, address = result.get("name") or pick.name, result.get("address") or pick.address
+    if not address:
+        return [], len(items)  # branch identity needs an address
+    kept, dropped = [], 0
+    for item in items:
+        try:
+            observation = MenuObservation(
+                business_name=name, address=address, source_url=item["source_url"],
+                product=item["product"], category=item.get("category"), price=item.get("price"),
+                observed_at=date.today(),
+            )
+            ledger.validate(EvidenceBundle(menu_observations=[observation]), {(normalized(name), normalized(address))})
+            kept.append(observation.model_dump(mode="json"))
+        except (ValueError, KeyError, TypeError):
+            dropped += 1
+    return kept, dropped
+
+
+def run(business: str, business_type: str, location: str, items: list[str] | None = None,
+        owner_products: list[str] | None = None) -> dict:
+    """`items` are the owner's best sellers: every competitor is asked for the price of those.
+    `owner_products` (all of the owner's items) lets menu items be categorized under the owner's names."""
     start = time.monotonic()
     items = items or []
+    owner_products = owner_products or []
     osm, web = _discover(business_type, location)
     print(f"[fast] discovery {time.monotonic() - start:.0f}s", file=sys.stderr)
     picks = _pick(business, business_type, location, osm, web)
@@ -144,29 +195,33 @@ def run(business: str, business_type: str, location: str, items: list[str] | Non
 
     def safe(p: Pick) -> dict | None:
         try:
-            return _research_one(p, business_type, location, items)
+            return _research_one(p, business_type, location, items, owner_products)
         except Exception as e:  # one bad competitor must not sink the whole run
             print(f"[fast] {p.name}: failed ({e})", file=sys.stderr)
             return None
 
     with ThreadPoolExecutor(max_workers=len(picks) or 1) as pool:
         results = [r for r in pool.map(safe, picks) if r]
-    print(f"[fast] done in {time.monotonic() - start:.0f}s", file=sys.stderr)
+    menu = [m for r in results for m in r.pop("_menu_observations", [])]
+    dropped = sum(r.pop("_menu_dropped", 0) for r in results)
+    print(f"[fast] done in {time.monotonic() - start:.0f}s; {len(menu)} menu items kept, {dropped} dropped", file=sys.stderr)
 
     return {
         "business": business,
         "type": business_type,
         "location": location,
         "date": date.today().isoformat(),
-        # Live facts like the default collector, but no evidence_bundle (menu/review
-        # observations), so product gaps and trends come out empty in fast mode.
+        # Menu items are checked against the pages each agent read; no review
+        # observations are collected, so review trends stay empty.
         "mode": "live_research",
         "collector": "fast",
         "competitors": [
             {k: (v if v is not None or k in ("address", "website", "rating", "review_count", "hours") else []) for k, v in r.items() if k != "caveats"}
             for r in results
         ],
-        "gaps_and_caveats": [f"{r.get('name')}: {c}" for r in results for c in (r.get("caveats") or [])],
+        "gaps_and_caveats": [f"{r.get('name')}: {c}" for r in results for c in (r.get("caveats") or [])]
+        + ([f"{dropped} menu item(s) were dropped: not found verbatim on a page the agent read, or the shop had no address."] if dropped else []),
+        "evidence_bundle": EvidenceBundle(menu_observations=menu).model_dump(mode="json"),
     }
 
 

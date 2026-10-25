@@ -94,7 +94,9 @@ The Moonrise menu file is an **unverified template**. Replace its indicative pro
 
 The advisor also accepts `--website`, `--max-workers`, `--reports-dir`, and `--no-history`.
 
-**Limits to know:** the per-competitor agents collect competitor facts (ratings, hours, prices, praise and complaints) but not the verified menu/review observations the source specialists collect, so `market_intelligence` product gaps and trends come out empty in advisor reports. The quick shortlist sometimes skips well-known nearby shops in favor of smaller ones (in one Fremont test it missed Petit Pierre, Fresh Flours and Rosellini's), so check the shortlist before showing a report to an owner. For the slower, evidence-validated collection, use `agent/competitor_agent.py` below.
+**Product gaps:** each competitor agent also records the menu items on pages it read, with a plain category ("Twice-Baked Almond Croissant" → "almond croissant") so the same product groups across shops. Items not found verbatim on a page the agent read are dropped. A product is a gap only when **at least 2 competitors** sell it and it isn't among the owner's products (`advisor.MIN_GAP_COMPETITORS`), so one shop's specialty doesn't show up. Gaps stay `needs_confirmation` unless the owner supplied a confirmed complete menu. Shops whose menus can't be read (no website, or a menu only on a delivery app) add no items.
+
+**Limits to know:** no review observations are collected, so review trends stay empty in advisor reports. The quick shortlist sometimes skips well-known nearby shops in favor of smaller ones (in one Fremont test it missed Petit Pierre, Fresh Flours and Rosellini's), so check the shortlist before showing a report to an owner. For the slower, evidence-validated collection, use `agent/competitor_agent.py` below.
 
 Run just the competitor part with `python agent/fast_competitors.py "Test Bakery" bakery "Capitol Hill, Seattle"`.
 

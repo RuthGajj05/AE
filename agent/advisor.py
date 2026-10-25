@@ -68,6 +68,11 @@ ADVISOR_SYSTEM = """You advise the owner of a small, brick-and-mortar business. 
 - If the sales input has is_synthetic=true or data_origin=synthetic_demo, state prominently that this is a demonstration using invented sales and cannot describe the named business's actual performance. Preserve that caveat in the snapshot and caveats; never treat synthetic inputs as real."""
 
 
+# A product counts as a gap only when at least this many competitors sell it,
+# so one shop's specialty doesn't show up as a market gap.
+MIN_GAP_COMPETITORS = 2
+
+
 def _validate_days(days: int) -> None:
     if isinstance(days, bool) or not isinstance(days, int) or days < 1:
         raise ValueError("days must be a positive integer")
@@ -102,8 +107,9 @@ def run(
     # price-check the owner's top sellers; competitor and presence research then run in parallel.
     sales = load_sales(sales_source, days, synthetic=synthetic_sales)
     top_items = [i["item"] for i in sales.get("items", [])[:4]]
+    owner_products = explicit_menu.products if explicit_menu else [i["item"] for i in sales.get("items", [])]
     with ThreadPoolExecutor(max_workers=2) as pool:
-        competitors_f = pool.submit(fast_competitors.run, business, business_type, location, top_items)
+        competitors_f = pool.submit(fast_competitors.run, business, business_type, location, top_items, owner_products)
         presence_f = pool.submit(
             business_agent.research_presence, business, location, website, max_workers=max_workers,
             model=fast_competitors.FAST_MODEL,
@@ -121,6 +127,7 @@ def run(
         resolved_menu = explicit_menu
     competitors = competitor_agent.analyze_report(
         competitors, resolved_menu, reports_dir=reports_dir, use_history=use_history,
+        min_gap_competitors=MIN_GAP_COMPETITORS,
     )
     print(f"[advisor] research done in {time.monotonic() - start:.0f}s, writing advice...", file=sys.stderr)
 

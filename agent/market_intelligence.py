@@ -57,6 +57,9 @@ class MenuObservation(LocatedEvidence):
     product: str = Field(min_length=1)
     observed_at: date
     price: str | None = None
+    # Plain generic name used to group the same product across shops
+    # ("Twice-Baked Almond Croissant" -> "almond croissant"); `product` stays verbatim.
+    category: str | None = None
 
 
 class ReviewObservation(LocatedEvidence):
@@ -140,6 +143,7 @@ class MarketIntelligence(EvidenceModel):
     min_reviews_per_period: int
     min_product_mentions_per_period: int
     menu_max_age_days: int
+    min_gap_competitors: int = 1
     trend_change_threshold_percentage_points: float = 5.0
     product_gaps: list[ProductGap]
     product_trends: list[ProductTrend]
@@ -253,6 +257,7 @@ def analyze_market(
     min_reviews_per_period: int = 10,
     min_product_mentions_per_period: int = 3,
     menu_max_age_days: int = 90,
+    min_gap_competitors: int = 1,
 ) -> MarketIntelligence:
     """Find observed menu gaps and descriptive changes in matched review samples.
 
@@ -263,7 +268,8 @@ def analyze_market(
     if not business.strip() or not location.strip():
         raise ValueError("business and location must not be blank")
     if any(value < 1 for value in (
-        window_days, min_reviews_per_period, min_product_mentions_per_period, menu_max_age_days
+        window_days, min_reviews_per_period, min_product_mentions_per_period, menu_max_age_days,
+        min_gap_competitors,
     )):
         raise ValueError("Window, sample thresholds and menu age must be positive")
     today = as_of or date.today()
@@ -293,10 +299,10 @@ def analyze_market(
     reviews, review_sources = _deduplicate_reviews(valid_reviews)
     menus = [m for m in bundle.menu_observations if oldest_menu <= m.observed_at <= today and competitor(m)]
     # Deduplicate identical observations, retaining multiple independent URLs.
-    menu_keys = {(_branch(m), canonical_product(m.product), m.source_url, m.observed_at) for m in menus}
+    menu_keys = {(_branch(m), canonical_product(m.category or m.product), m.source_url, m.observed_at) for m in menus}
     by_product = defaultdict(list)
     for menu in menus:
-        by_product[canonical_product(menu.product)].append(menu)
+        by_product[canonical_product(menu.category or menu.product)].append(menu)
 
     gaps = []
     for product, observations in sorted(by_product.items()):
@@ -305,6 +311,8 @@ def analyze_market(
         branches = defaultdict(list)
         for observation in observations:
             branches[_branch(observation)].append(observation)
+        if len(branches) < min_gap_competitors:
+            continue  # e.g. one shop's specialty item is not a market gap
         relevant_reviews = [r for r in reviews if competitor(r)
             and r.source_kind in {"review_text", "google_places_sample"}
             and (r.published_at is None or previous_start <= r.published_at <= today)
@@ -432,7 +440,8 @@ def analyze_market(
         business=business, location=location, as_of=today, window_days=window_days,
         min_reviews_per_period=min_reviews_per_period,
         min_product_mentions_per_period=min_product_mentions_per_period,
-        menu_max_age_days=menu_max_age_days, product_gaps=gaps, product_trends=trends,
+        menu_max_age_days=menu_max_age_days, min_gap_competitors=min_gap_competitors,
+        product_gaps=gaps, product_trends=trends,
         evidence_counts={
             "menu_observations_received": len(bundle.menu_observations),
             "recent_competitor_menu_observations": len(menu_keys),

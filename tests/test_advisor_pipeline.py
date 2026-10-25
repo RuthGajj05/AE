@@ -56,7 +56,13 @@ def facts(reviews=None):
                 "business_name": "Nearby Bakery", "address": "2 Main Street, Seattle",
                 "source_url": "https://example.com/menu", "product": product,
                 "observed_at": TODAY.isoformat(),
-            } for product in ("Chocolate croissant", "Matcha latte")],
+            } for product in ("Chocolate croissant", "Matcha latte")] + [{
+                # A second shop sells matcha under another name (grouped by category,
+                # since the advisor needs 2+ competitors per gap) plus a one-off specialty.
+                "business_name": "Corner Cafe", "address": "9 Main Street, Seattle",
+                "source_url": "https://example.org/menu", "product": product, "category": category,
+                "observed_at": TODAY.isoformat(),
+            } for product, category in (("Iced Ceremonial Matcha", "matcha latte"), ("Pain au Chocolat", "chocolate croissant"), ("Ube Mochi Donut", "ube mochi donut"))],
             "review_observations": reviews or [],
         },
     }
@@ -308,7 +314,9 @@ class AdvisorPipelineTests(unittest.TestCase):
             result = advisor.run("Owner Bakery", "bakery", "1 Main Street, Seattle", "unused.csv", max_workers=2, reports_dir=directory)
             snapshot = json.loads((Path(directory) / result["competitor_snapshot"]).read_text())
         self.assertEqual(result["mode"], "advisor")
+        # Matcha is sold by two shops; the ube donut by only one, so it is not a gap.
         self.assertEqual([gap["product"] for gap in result["market_intelligence"]["product_gaps"]], ["matcha latte"])
+        self.assertEqual(result["market_intelligence"]["product_gaps"][0]["competitor_count"], 2)
         self.assertEqual(snapshot["mode"], "live_research")
         self.assertNotIn("your_sales", snapshot)
         self.assertEqual(result["market_intelligence"], result["competitors"]["market_intelligence"])
