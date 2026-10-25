@@ -12,10 +12,22 @@ export const IconHome = (p) => (
   </Svg>
 )
 
-export const IconExplore = (p) => (
+export const IconBell = (p) => (
   <Svg {...p}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="m15.5 8.5-2 5-5 2 2-5z" />
+    <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />
+  </Svg>
+)
+
+export const IconLock = (p) => (
+  <Svg size={22} {...p}>
+    <rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+    <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+  </Svg>
+)
+
+export const IconX = (p) => (
+  <Svg size={16} strokeWidth={2.2} {...p}>
+    <path d="M6 6l12 12M18 6 6 18" />
   </Svg>
 )
 

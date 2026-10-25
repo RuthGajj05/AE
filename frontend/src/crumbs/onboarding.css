@@ -1,0 +1,185 @@
+/* "I run a spot" onboarding sheet */
+
+.onb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(17, 17, 17, 0.35);
+  animation: onb-fade 0.2s ease-out;
+}
+
+.onb {
+  width: 100%;
+  max-width: 520px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  padding: 10px 20px calc(20px + var(--safe-bottom));
+  border-radius: 22px 22px 0 0;
+  background: #fff;
+  box-shadow: 0 -8px 30px rgba(17, 17, 17, 0.18);
+  animation: onb-up 0.3s cubic-bezier(0.25, 1.2, 0.4, 1);
+}
+
+@keyframes onb-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes onb-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onb-backdrop,
+  .onb {
+    animation: none;
+  }
+}
+
+.onb-handle {
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 14px;
+  border-radius: 2px;
+  background: #d9d4c7;
+}
+
+.onb-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--honey-milk);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.onb h2 {
+  margin: 10px 0 4px;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.onb-lede {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.onb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.onb-field legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.onb-field input:not([type='radio']) {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--milk);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.onb-field input:focus-visible {
+  outline: 2px solid var(--honey);
+  outline-offset: 1px;
+}
+
+.onb-foods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onb-food {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.onb-food input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.onb-food:has(input:focus-visible) {
+  outline: 2px solid var(--honey);
+  outline-offset: 2px;
+}
+
+.onb-food.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.onb-food.is-on svg {
+  color: var(--honey-milk);
+}
+
+.onb-note {
+  margin: 4px 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.onb-primary,
+.onb-secondary {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.onb-primary {
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+}
+
+.onb-secondary {
+  margin-top: 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}

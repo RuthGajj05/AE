@@ -1,0 +1,232 @@
+/* Home: ring-style Insights header, The gap card, and the locked view for consumer accounts.
+   Shared business pieces (.biz, .breakdown, .rival-card, .gap-bar, .drag-card) live in crumbs.css. */
+
+.whoop {
+  margin: 16px auto 0;
+  padding: 18px 18px 16px;
+  border-radius: 22px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.whoop-eyebrow {
+  margin: 0;
+  color: var(--honey-milk);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.whoop h1 {
+  margin: 2px 0 2px;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.whoop-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.sample-tag.is-dark {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.rings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 18px 0 12px;
+}
+
+.ring {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ring svg {
+  width: 100%;
+  max-width: 92px;
+  height: auto;
+}
+
+.ring-track,
+.ring-fill {
+  fill: none;
+  stroke-width: 8;
+}
+
+.ring-track {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.ring-fill {
+  stroke: var(--honey-milk);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease-out;
+}
+
+.ring-value {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  max-width: 92px;
+  margin: 0 auto;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.ring-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rings-note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.insight-cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.gap-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--honey-milk);
+}
+
+.gap-card .biz-label {
+  margin: 0;
+  color: rgba(17, 17, 17, 0.6);
+}
+
+.gap-card h2 {
+  margin: 2px 0 4px;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.gap-card p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.gap-card .gap-track {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.gap-card .gap-band {
+  background: var(--honey);
+}
+
+.gap-card .gap-labels {
+  color: rgba(17, 17, 17, 0.65);
+}
+
+/* ---------- locked ---------- */
+
+.locked-home {
+  position: relative;
+  overflow: hidden;
+}
+
+.locked-preview {
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sk {
+  display: block;
+  border-radius: 999px;
+  background: #e4ddcb;
+}
+
+.whoop.is-skeleton .sk {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.sk-line {
+  height: 10px;
+  margin: 6px 0;
+}
+
+.sk-title {
+  width: 46%;
+  height: 22px;
+  margin: 8px 0;
+}
+
+.breakdown-top .sk-line {
+  margin: 4px 0;
+}
+
+.locked-card {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: min(300px, calc(100% - 48px));
+  padding: 22px 20px 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.16);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.locked-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--milk);
+}
+
+.locked-card h2 {
+  margin: 10px 0 4px;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.locked-card p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.locked-btn {
+  min-height: 46px;
+  padding: 0 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}

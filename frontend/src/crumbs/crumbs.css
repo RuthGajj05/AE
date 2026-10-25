@@ -1381,6 +1381,30 @@ button {
   text-decoration: none;
 }
 
+.nav-icon {
+  position: relative;
+  display: grid;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -5px;
+  right: -9px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--honey-milk);
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .nav-tab.is-active {
   color: var(--ink);
 }

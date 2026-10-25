@@ -1,19 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { isBusiness, useAccount } from './account.js'
+import { AccountProvider } from './AccountProvider.jsx'
 import { BottomNav } from './BottomNav.jsx'
-import { BusinessScreen } from './BusinessScreen.jsx'
+import { HomeScreen } from './HomeScreen.jsx'
 import { MapScreen } from './MapScreen.jsx'
+import { Onboarding } from './Onboarding.jsx'
 import { TABS } from './tabs.js'
 
-const tabFromHash = () => {
+// #/home, #/alerts, #/map, #/saved, #/you. No (or an unknown) hash lands consumers on the Map, businesses on Home.
+const tabFromHash = (business) => {
   const id = window.location.hash.replace('#/', '')
-  return TABS.some((t) => t.id === id) ? id : 'map'
+  if (TABS.some((t) => t.id === id)) return id
+  return business ? 'home' : 'map'
 }
 
 export default function CrumbsApp() {
-  const [tab, setTab] = useState(tabFromHash)
+  return (
+    <AccountProvider>
+      <Shell />
+    </AccountProvider>
+  )
+}
+
+function Shell() {
+  const { account, onboarding } = useAccount()
+  const business = isBusiness(account)
+  const [tab, setTab] = useState(() => tabFromHash(business))
+  const businessNow = useRef(business)
 
   useEffect(() => {
-    const onHash = () => setTab(tabFromHash())
+    businessNow.current = business
+  })
+
+  useEffect(() => {
+    const onHash = () => setTab(tabFromHash(businessNow.current))
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
@@ -24,18 +44,19 @@ export default function CrumbsApp() {
       <main className="screen" hidden={tab !== 'map'}>
         <MapScreen active={tab === 'map'} />
       </main>
-      {tab === 'you' && (
+      {tab === 'home' && (
         <main className="screen">
-          <BusinessScreen />
+          <HomeScreen />
         </main>
       )}
-      {tab !== 'map' && tab !== 'you' && (
+      {(tab === 'alerts' || tab === 'saved' || tab === 'you') && (
         <main className="screen empty-tab">
           <h1>{TABS.find((t) => t.id === tab).label}</h1>
           <p>Coming soon.</p>
         </main>
       )}
       <BottomNav current={tab} />
+      {onboarding && <Onboarding onDone={() => (window.location.hash = '#/home')} />}
     </div>
   )
 }
