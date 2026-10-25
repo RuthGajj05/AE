@@ -77,6 +77,34 @@ Full pipeline (about 2.5 minutes):
 
 The report is saved to `reports/<business>-<date>-advisor.json`. Progress and timings print as it runs.
 
+### Fast mode (about 40 seconds instead of ~3 minutes)
+
+Add `--fast` to the full pipeline:
+
+```sh
+.venv/bin/python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv --fast
+```
+
+Measured on the sample bakery:
+
+| Step | Default | `--fast` |
+|---|---|---|
+| Competitor research | 108 s | 17 s |
+| Advice | 64 s | 22 s |
+| **Total** | **172 s** | **39 s** |
+
+Why it was slow: most of the time was Claude *writing* long answers one after another (the competitor report was a single 54 s answer covering every shop, then 64 s for the advice), not searching.
+
+What changes (`agent/fast_competitors.py`):
+- Discovery (OpenStreetMap plus one web search) runs at once, and one short call picks the competitors.
+- Each competitor gets its own small agent, **all in parallel**, writing only its own entry.
+- Those agents ask for prices of the owner's own best sellers, so the comparison covers the right products.
+- The advice step uses Sonnet 5.5. Set `ADVISOR_MODEL` or `FAST_MODEL` (competitor agents; `claude-haiku-5-5` is faster still but less careful) to change models, and `MAX_COMPETITORS` (default 8) to change how many shops are researched.
+
+Trade-off: the competitor shortlist is chosen from less context than the default agent uses, so it sometimes picks shops a little farther away. Facts stay sourced and fields stay empty when not found, as before. Check the shortlist for your demo.
+
+Run just the competitor part with `python agent/fast_competitors.py "Test Bakery" bakery "Capitol Hill, Seattle"`.
+
 ### Pulling sales straight from Square or Toast
 
 Instead of a CSV, pass `--sales square` or `--sales toast` (and optionally `--days 56`) to pull item-level sales from the POS API. Add the credentials to `.env`:
