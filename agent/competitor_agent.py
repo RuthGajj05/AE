@@ -548,7 +548,9 @@ TRACKED_INSTRUCTIONS = """
 This is a repeat check. Re-research exactly these tracked competitors (same branches and addresses) so the results can be compared with last time, rather than choosing a new set:
 {tracked}
 
-Also run one batch of searches for {business_type} businesses near {location} that recently opened, are opening soon, or closed (e.g. "new {business_type} opening {location}", "{business_type} closed {location}"). Add a competitor that isn't tracked only if a source shows it opened or is opening recently, and set its status to say so with the date and source. If a tracked competitor has closed, keep it and set its status."""
+Also run one batch of searches for {business_type} businesses near {location} that recently opened, are opening soon, or closed (e.g. "new {business_type} opening {location}", "{business_type} closed {location}"). Add a competitor that isn't tracked only if a source shows it opened or is opening recently, and set its status to say so with the date and source. If a tracked competitor has closed, keep it and set its status.
+
+This check compares competitor facts only, so submit empty menu_observations and review_observations."""
 
 
 def run(

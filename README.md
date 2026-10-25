@@ -89,6 +89,33 @@ The Moonrise menu file is an **unverified template**. Replace its indicative pro
 
 The advisor also accepts `--website`, `--strategy multi|single`, `--max-agents`, `--max-workers`, `--reports-dir`, and `--no-history`. It saves a separate competitor snapshot for future history and retains the original sales, presence, competitor, and advice sections in the final report.
 
+### Fast mode (under a minute instead of ~3–4)
+
+Add `--fast` to the full pipeline:
+
+```sh
+.venv/bin/python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv --fast
+```
+
+What changes (`agent/fast_competitors.py`):
+- Discovery (OpenStreetMap plus one web search) runs at once, and one short Sonnet 5.5 call picks the competitors.
+- Each competitor gets its own small Sonnet 5.5 agent at low effort, **all in parallel**, writing only its own entry, and asked for prices of the owner's best sellers.
+- The advice step uses Sonnet 5.5. Set `ADVISOR_MODEL` or `FAST_MODEL` (`claude-haiku-5-5` is faster still but less careful) to change models, and `MAX_COMPETITORS` (default 8) to change how many shops are researched.
+- `--strategy` and the source specialists are not used, and no menu/review observations are collected, so `market_intelligence` (product gaps and trends) comes out empty.
+
+Measured on Sea Wolf Bakers (Fremont, Seattle) with the synthetic sales, Oct 25, 2026:
+
+| | Default (single-agent, Opus 5.5) | `--fast` (Sonnet 5.5) |
+|---|---|---|
+| Total time | 165 s | 48 s |
+| Competitors researched | 9 | 6 |
+| Prices / ratings / hours found | 32 / 9 / 9 | 36 / 6 / 5 |
+
+Ratings matched between the two runs where both covered a shop. The trade-off is the shortlist: fast mode missed three of the closest well-known pastry competitors (Petit Pierre, Fresh Flours, Rosellini's) and picked a 16-review cookie shop instead. Use it for quick demos and check the shortlist; use the default for reports an owner will act on.
+
+Run just the competitor part with `python agent/fast_competitors.py "Test Bakery" bakery "Capitol Hill, Seattle"`.
+
+
 ### Pull sales from Square or Toast
 
 Instead of a CSV, pass `--sales square` or `--sales toast`. `--days 56` sets the lookback period for POS sales; the default is 56 days. Both APIs produce the same item-level row format used by CSV analysis, including fractional quantities.
@@ -226,6 +253,7 @@ The Python tests run without live service credentials:
 - `agent/competitor_agent.py`: facts-only collector, analyzed `research(...)` entry point, and CLI.
 - `agent/business_agent.py`: sales calculations and the owner's online-presence research.
 - `agent/pos.py`: Square and Toast item-level sales retrieval.
+- `agent/fast_competitors.py`: `--fast` competitor research (one quick Sonnet 5.5 agent per competitor, in parallel).
 - `agent/source_agents.py`: discovery, independent website specialists, source budgets, and deterministic merging.
 - `agent/agent_loop.py`: shared loop with bounded tool context and parallel retrieval.
 - `agent/market_intelligence.py`: deterministic menu-gap and review-trend analysis.

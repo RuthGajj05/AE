@@ -38,12 +38,19 @@ def validate_max_workers(value: int) -> int:
     return value
 
 
-def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *, max_workers: int = 4,
-              max_turns: int = MAX_TURNS) -> dict:
+# Models that accept the server-side refusal fallback (see the Claude API docs); others run without it.
+FALLBACK_MODELS = {"claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-sonnet-5-5"}
+
+
+def run_agent(
+    system: str, prompt: str, tools: list, submit_tool, label: str, *,
+    model: str | None = None, effort: str = "medium", max_workers: int = 4, max_turns: int = MAX_TURNS,
+) -> dict:
     """Run the agent and return the input of its successful `submit_tool` call."""
     validate_max_workers(max_workers)
     if isinstance(max_turns, bool) or not isinstance(max_turns, int) or not 1 <= max_turns <= MAX_TURNS:
         raise ValueError(f"max_turns must be an integer between 1 and {MAX_TURNS}")
+    model = model or configured_model()
     client = anthropic.Anthropic()
     tools_by_name = {t.name: t for t in tools}
     messages = [{"role": "user", "content": prompt}]
@@ -55,15 +62,15 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *,
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         for _ in range(max_turns):
             t0 = time.monotonic()
+            extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} if model in FALLBACK_MODELS else {}
             response = client.beta.messages.create(
-                model=configured_model(),
+                model=model,
                 max_tokens=16000,
                 system=system,
                 tools=[t.to_dict() for t in tools],
-                output_config={"effort": "medium"},
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
+                output_config={"effort": effort},
                 messages=messages,
+                **extra,
             )
             model_secs = time.monotonic() - t0
             if response.stop_reason == "refusal":
@@ -101,6 +108,9 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *,
                 if not results[index].get("is_error"):
                     successful_submission = index
             log(f"   model {model_secs:.0f}s, {len(calls)} tool call(s) {time.monotonic() - t0:.0f}s")
+            for c, r in zip(calls, results):
+                if r.get("is_error"):
+                    log(f"   ! {c.name} failed: {str(r['content'])[:200]}")
             messages.append({"role": "user", "content": results})
 
             if successful_submission is not None:
