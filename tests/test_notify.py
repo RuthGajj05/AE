@@ -1,4 +1,5 @@
-"""Tests for agent/notify.py. No network: SMTP is mocked. Run: python tests/test_notify.py"""import copy, json, os, sys
+"""Tests for agent/notify.py. No network: SMTP is mocked. Run: python tests/test_notify.py"""
+import copy, json, os, sys
 from pathlib import Path
 from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agent"))
