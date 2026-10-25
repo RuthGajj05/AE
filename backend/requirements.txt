@@ -10,3 +10,5 @@ python-dotenv
 httpx
 # Tests
 pytest
+# Sales connections: encrypted owner credentials (backend/sales.py)
+cryptography>=43

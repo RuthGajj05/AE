@@ -5,8 +5,10 @@ disk-cached helper. Every address is looked up once and kept in SQLite. Place se
 Places Autocomplete when GOOGLE_PLACES_API_KEY is set, otherwise Nominatim, biased to Capitol Hill.
 """
 
+import functools
 import math
 import os
+import time
 
 import httpx
 
@@ -25,12 +27,38 @@ def miles_between(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
+NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse"
+
+
+@functools.lru_cache(maxsize=512)
+def _neighborhood(lat: float, lng: float) -> str | None:
+    """"Fremont, Seattle" for a point, from OpenStreetMap's reverse geocoder (1 request/second, like Ruth's helper)."""
+    try:
+        with ruth._nominatim_lock:
+            wait = 1.0 - (time.monotonic() - ruth._nominatim_last[0])
+            if wait > 0:
+                time.sleep(wait)
+            try:
+                resp = httpx.get(NOMINATIM_REVERSE_URL, params={"lat": lat, "lon": lng, "format": "jsonv2", "zoom": 14,
+                                                                "addressdetails": 1}, headers=ruth.OSM_HEADERS, timeout=10)
+            finally:
+                ruth._nominatim_last[0] = time.monotonic()
+        resp.raise_for_status()
+        address = resp.json().get("address") or {}
+    except (httpx.HTTPError, ValueError):
+        return None
+    area = address.get("neighbourhood") or address.get("suburb") or address.get("quarter")
+    city = address.get("city") or address.get("town") or address.get("village")
+    return f"{area}, {city}" if area and city else city
+
+
 def area_label(lat: float, lng: float) -> str:
-    """The place name Ruth's agent searches around. The demo area is named directly; elsewhere, Seattle."""
+    """The place name Ruth's agent searches around: the demo area by name, else the point's neighborhood
+    ("Fremont, Seattle"), else Seattle."""
     hill = config.CAPITOL_HILL
     if miles_between(lat, lng, hill["lat"], hill["lng"]) <= 1.5:
         return hill["label"]
-    return "Seattle, WA"
+    return _neighborhood(round(lat, 4), round(lng, 4)) or "Seattle, WA"
 
 
 def full_address(address: str, city: str = "Seattle, WA") -> str:

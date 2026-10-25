@@ -55,6 +55,31 @@ def get(cuisine_id: str) -> dict | None:
     return _BY_ID.get(cuisine_id)
 
 
+# Words owners use for these food types ("a taqueria", "sushi bar") → the crumbs food type.
+_SYNONYMS = {"pizzeria": "pizza", "taqueria": "tacos", "taco": "tacos", "steakhouse": "steak", "sushi": "sushi",
+             "ramen": "ramen", "pizza": "pizza", "tacos": "tacos", "steak": "steak"}
+
+
+def match(text: str | None) -> str | None:
+    """The crumbs food type an owner's description names, e.g. "Sushi bar" → "sushi"; None for "bakery"."""
+    words = "".join(ch if ch.isalnum() else " " for ch in (text or "").lower()).split()
+    for word in words:
+        if word in _BY_ID:
+            return word
+        if word in _SYNONYMS:
+            return _SYNONYMS[word]
+    return None
+
+
+def research_type(business: dict) -> str:
+    """How Ruth's research describes the business: the owner's words, else "<food type> restaurant"."""
+    kind = (business.get("kind") or "").strip()
+    if kind:
+        return kind
+    business_type = business["business_type"]
+    return f"{business_type} restaurant" if business_type in _BY_ID else business_type
+
+
 def scored_attributes(cuisine_id: str) -> list[dict]:
     """The attributes Claude scores 0-100 from review text (everything without a unit)."""
     return [a for a in _BY_ID[cuisine_id]["attributes"] if "unit" not in a]

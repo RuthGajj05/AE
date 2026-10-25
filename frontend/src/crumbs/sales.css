@@ -1,0 +1,95 @@
+/* Sales connection (onboarding and the You tab). Form fields reuse .onb-field and .onb-primary. */
+
+.sales {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sales-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sales-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+  border: 1.5px solid var(--muted);
+}
+
+.sales-dot.is-on {
+  background: #2f7d4f;
+  border-color: #2f7d4f;
+}
+
+.sales-muted,
+.sales-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.sales-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--pale);
+  font-size: 14px;
+}
+
+.sales-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sales-choices button,
+.sales-disconnect {
+  padding: 8px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sales-choices button.is-on {
+  background: var(--ink);
+  color: #fff;
+}
+
+.sales-disconnect {
+  align-self: flex-start;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.sales-choices button:focus-visible,
+.sales-disconnect:focus-visible {
+  outline: 2px solid var(--honey);
+  outline-offset: 2px;
+}
+
+.sales-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sales-form select {
+  width: 100%;
+  font: inherit;
+}

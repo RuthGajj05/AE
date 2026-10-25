@@ -10,6 +10,8 @@ from datetime import datetime, timedelta, timezone
 
 import alerts
 import config
+import cuisines
+import sales as sales_data
 import store
 
 # A report still "running" after this long is treated as abandoned (e.g. the server restarted mid-run).
@@ -45,15 +47,21 @@ def run(business_id: str, report_id: str) -> None:
     if b is None:
         store.finish_report(report_id, error="We couldn't find that business.")
         return
+    sales_problem = None
     try:
-        sales = "square" if config.has_key("SQUARE_ACCESS_TOKEN") else None
+        analysis = sales_data.analysis_for(b)
+    except ValueError as e:  # e.g. a revoked token: still write the report, and say why it has no sales
+        analysis, sales_problem = None, str(e)
+    try:
         report = _advisor().run(
-            b["name"], f"{b['business_type']} restaurant", b["location"], sales, b.get("website"),
-            reports_dir=config.REPO_ROOT / "reports",
+            b["name"], cuisines.research_type(b), b["location"], None, b.get("website"),
+            reports_dir=config.REPO_ROOT / "reports", sales=analysis,
         )
     except Exception as e:
         store.finish_report(report_id, error=f"The research didn't finish: {str(e)[:250]}")
         return
+    if sales_problem:
+        report.setdefault("advice", {}).setdefault("caveats", []).insert(0, sales_problem)
     supabase_id = None
     if alerts.supabase_configured() and b.get("supabase_business_id"):
         try:

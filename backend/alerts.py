@@ -221,7 +221,7 @@ def run_monitor(business_id: str) -> dict:
         sb = monitor.SupabaseStore()
         report = monitor.check(sb.get_business(b["supabase_business_id"]), sb)
     else:
-        ruth_business = {"id": business_id, "name": b["name"], "business_type": f"{b['business_type']} restaurant",
+        ruth_business = {"id": business_id, "name": b["name"], "business_type": cuisines.research_type(b),
                          "location": b["address"] or b["location"]}
         report = monitor.check(ruth_business, MonitorStore())
     return {"baseline": report is None, "changes": len(report.changes) if report else 0}

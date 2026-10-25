@@ -18,7 +18,7 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 export function HomeScreen() {
   const { account, startOnboarding } = useAccount()
   return isBusiness(account) ? (
-    <BusinessHome name={account.business.name} businessId={account.business.id} />
+    <BusinessHome name={account.business.name} businessId={account.business.id} cuisine={account.business.cuisine} />
   ) : (
     <LockedHome onStart={startOnboarding} />
   )
@@ -43,7 +43,7 @@ function Switch({ view, onView, disabled = false }) {
   )
 }
 
-function BusinessHome({ name, businessId }) {
+function BusinessHome({ name, businessId, cuisine }) {
   const [view, setView] = useState('report')
   const [report, setReport] = useState(null)
 
@@ -62,8 +62,14 @@ function BusinessHome({ name, businessId }) {
     <div className="biz">
       <Switch view={view} onView={setView} />
       {view === 'report' && <ReportView businessId={businessId} />}
-      {report && view === 'insights' && <Insights report={report} name={name} />}
-      {report && view === 'rivals' && <Rivals report={report} name={name} />}
+      {view !== 'report' && !cuisine && (
+        <p className="rep-note">
+          Insights and Rivals compare spots that crumbs members rate by food type (sushi, ramen, pizza, tacos, steak).
+          They aren't available for your kind of business yet; your Report covers your competitors.
+        </p>
+      )}
+      {cuisine && report && view === 'insights' && <Insights report={report} name={name} />}
+      {cuisine && report && view === 'rivals' && <Rivals report={report} name={name} />}
     </div>
   )
 }

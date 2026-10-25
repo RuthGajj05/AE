@@ -32,7 +32,7 @@ export const DEFAULT_ACCOUNT = {
 }
 
 /** Pre-filled in onboarding; it matches the sample Insights and Rivals data. */
-export const SAMPLE_BUSINESS = { name: 'Tamago Sushi', address: '1520 E Olive Way, Seattle', cuisine: 'sushi' }
+export const SAMPLE_BUSINESS = { name: 'Tamago Sushi', address: '1520 E Olive Way, Seattle', type: 'Sushi', cuisine: 'sushi' }
 
 const KEY = 'crumbs.account'
 

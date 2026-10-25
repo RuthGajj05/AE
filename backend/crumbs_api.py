@@ -14,6 +14,7 @@ import demo
 import geo
 import pipeline
 import reports
+import sales
 import store
 
 router = APIRouter(prefix="/api")
@@ -116,7 +117,10 @@ class OnboardIn(BaseModel):
     address: str | None = Field(None, max_length=300)
     lat: float | None = Field(None, ge=-90, le=90)
     lng: float | None = Field(None, ge=-180, le=180)
-    cuisine: str
+    # One of crumbs' food types (sushi, ramen, …) and/or the owner's own words ("bakery", "cafe"). Any business can
+    # onboard; crumbs' review scoring (Insights, Rivals) runs only for its food types.
+    cuisine: str | None = None
+    businessType: str | None = Field(None, max_length=60)
     goals: list[str] = Field(default_factory=list, max_length=10)
     questionnaire: Questionnaire = Field(default_factory=Questionnaire)
     deepResearch: bool = False
@@ -130,7 +134,10 @@ class OnboardIn(BaseModel):
 @router.post("/business/onboard")
 def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Query(False, alias="demo"),
             user: dict | None = Depends(auth.current_user)):
-    cuisine = _cuisine(body.cuisine)
+    kind = " ".join((body.businessType or "").split())
+    cuisine = _cuisine(body.cuisine) if body.cuisine else cuisines.match(kind)
+    if not cuisine and not kind:
+        raise HTTPException(400, "Tell us what kind of business it is, like bakery, cafe or sushi.")
     if _demo(demo_flag):
         return {"businessId": demo.BUSINESS_ID, "status": "complete", "demo": True}
     auth.require_user(user)
@@ -138,22 +145,26 @@ def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Quer
         raise HTTPException(400, "Tell us the business name, or pick it from search.")
     try:
         business_id = pipeline.onboard(
-            cuisine=cuisine, name=body.name, address=body.address, place_id=body.placeId, lat=body.lat, lng=body.lng,
+            cuisine=cuisine or kind.lower(), name=body.name, address=body.address, place_id=body.placeId, lat=body.lat, lng=body.lng,
             goals=[g.strip()[:80] for g in body.goals if g.strip()],
             questionnaire={k: v.strip() for k, v in body.questionnaire.model_dump().items() if v and v.strip()},
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    settings = {"share_stock_alerts": int(body.shareStockAlerts), "owner_user_id": user["id"] if user else None}
+    settings = {"share_stock_alerts": int(body.shareStockAlerts), "owner_user_id": user["id"] if user else None,
+                "kind": kind or None}
     if body.lowStockThreshold is not None:
         settings["low_stock_threshold"] = body.lowStockThreshold
+    if not cuisine:
+        settings["scoring_status"] = "unsupported"
     store.update_business(business_id, **settings)
-    background.add_task(pipeline.score_business, business_id, body.deepResearch)
+    if cuisine:
+        background.add_task(pipeline.score_business, business_id, body.deepResearch)
     report_queued = body.advisorReport and all(config.has_key(k) for k in pipeline.LIVE_KEYS)
     if report_queued:
         report_id, _ = reports.start(business_id)
         background.add_task(reports.run, business_id, report_id)
-    return {"businessId": business_id, "status": "queued", "reportQueued": report_queued}
+    return {"businessId": business_id, "status": "queued", "reportQueued": report_queued, "cuisine": cuisine}
 
 
 @router.get("/business/{business_id}/insights")
@@ -185,8 +196,85 @@ def me(user: dict | None = Depends(auth.current_user)):
     """The signed-in owner and their spot, so a new device can restore the business account."""
     auth.require_user(user)
     b = store.business_for_owner(user["id"]) if user else None
-    business = {"id": b["id"], "name": b["name"], "address": b["address"], "cuisine": b["business_type"]} if b else None
+    business = {"id": b["id"], "name": b["name"], "address": b["address"],
+                "cuisine": b["business_type"] if cuisines.get(b["business_type"]) else None,
+                "type": b.get("kind") or b["business_type"]} if b else None
     return {"user": user, "authEnabled": auth.enabled(), "business": business}
+
+
+# ---------- sales data (optional: CSV, Square or Toast) ----------
+
+class CsvIn(BaseModel):
+    filename: str = Field("sales.csv", max_length=200)
+    content: str = Field(min_length=1, max_length=sales.MAX_CSV_BYTES)
+
+
+class SquareIn(BaseModel):
+    accessToken: str = Field(min_length=10, max_length=500)
+    environment: Literal["production", "sandbox"] = "production"
+
+
+class ToastIn(BaseModel):
+    clientId: str = Field(min_length=3, max_length=200)
+    clientSecret: str = Field(min_length=3, max_length=500)
+    restaurantGuid: str = Field(min_length=3, max_length=100)
+
+
+def _owned(business_id: str, user: dict | None) -> dict:
+    b = auth.check_owner(store.get_business(business_id), user)
+    if b["demo"]:
+        raise HTTPException(400, "The sample business can't connect sales. Set up your own spot first.")
+    return b
+
+
+def _connected(business_id: str, background: BackgroundTasks, refresh_report: bool, connect) -> dict:
+    """Run a connection check, then (by default) start a fresh report that uses the new sales."""
+    try:
+        connect()
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    report_started = refresh_report and all(config.has_key(k) for k in pipeline.LIVE_KEYS)
+    if report_started:
+        report_id, already = reports.start(business_id)
+        if not already:
+            background.add_task(reports.run, business_id, report_id)
+    return {**sales.status(store.get_business(business_id)), "reportStarted": report_started}
+
+
+@router.get("/business/{business_id}/sales")
+def sales_status(business_id: str, user: dict | None = Depends(auth.current_user)):
+    return sales.status(auth.check_owner(store.get_business(business_id), user))
+
+
+@router.post("/business/{business_id}/sales/csv")
+def connect_csv(business_id: str, body: CsvIn, background: BackgroundTasks, refreshReport: bool = True,
+                user: dict | None = Depends(auth.current_user)):
+    _owned(business_id, user)
+    return _connected(business_id, background, refreshReport,
+                      lambda: sales.connect_csv(business_id, body.filename, body.content))
+
+
+@router.post("/business/{business_id}/sales/square")
+def connect_square(business_id: str, body: SquareIn, background: BackgroundTasks, refreshReport: bool = True,
+                   user: dict | None = Depends(auth.current_user)):
+    _owned(business_id, user)
+    return _connected(business_id, background, refreshReport,
+                      lambda: sales.connect_square(business_id, body.accessToken, body.environment))
+
+
+@router.post("/business/{business_id}/sales/toast")
+def connect_toast(business_id: str, body: ToastIn, background: BackgroundTasks, refreshReport: bool = True,
+                  user: dict | None = Depends(auth.current_user)):
+    _owned(business_id, user)
+    return _connected(business_id, background, refreshReport,
+                      lambda: sales.connect_toast(business_id, body.clientId, body.clientSecret, body.restaurantGuid))
+
+
+@router.delete("/business/{business_id}/sales")
+def disconnect_sales(business_id: str, user: dict | None = Depends(auth.current_user)):
+    _owned(business_id, user)
+    sales.disconnect(business_id)
+    return sales.status(store.get_business(business_id))
 
 
 # ---------- advisor reports (Ruth's advisor) ----------

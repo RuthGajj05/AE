@@ -110,6 +110,18 @@ export const getMockPlaces = () => mock.places
 /** The food types for the chips: [{ id, label }]. */
 export const CUISINES = cuisineData.cuisines.map(({ id, label }) => ({ id, label }))
 
+// Words owners use for crumbs' food types ("Sushi bar", "Taqueria") → the food type; same rules as the backend's
+// cuisines.match. Anything else (a bakery, a cafe) is still a business, just without crumbs' review scoring.
+const FOOD_WORDS = { pizzeria: 'pizza', taqueria: 'tacos', taco: 'tacos', steakhouse: 'steak' }
+export function matchCuisine(text) {
+  const words = String(text ?? '').toLowerCase().split(/[^a-z0-9]+/)
+  for (const word of words) {
+    if (CUISINES.some((c) => c.id === word)) return word
+    if (FOOD_WORDS[word]) return FOOD_WORDS[word]
+  }
+  return null
+}
+
 // Demo "you are here": the middle of Capitol Hill. Walks and distances are measured from it.
 export const USER_LOCATION = CAPITOL_HILL
 
@@ -333,8 +345,8 @@ export function markAlertRead(id) {
  * a tailored report in the background (about a minute). { businessId, reportQueued } or null when the backend is
  * down, in which case the account stays local and the app keeps showing sample data.
  */
-export function onboardBusiness({ name, address, cuisine }) {
-  return apiPostJson('/business/onboard', { name, address, cuisine, advisorReport: true })
+export function onboardBusiness({ name, address, type }, { advisorReport = true } = {}) {
+  return apiPostJson('/business/onboard', { name, address, businessType: type, advisorReport })
 }
 
 /**
@@ -354,3 +366,41 @@ export function refreshAdvisorReport(businessId) {
 export function getMe() {
   return apiGet('/me')
 }
+
+
+// ---------- sales data (optional: CSV, Square or Toast) ----------
+
+/** A business call whose error message the owner needs to see: { ok, data } or { ok: false, error }. */
+async function apiSend(method, path, body) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+    })
+    const data = await res.json().catch(() => null)
+    return res.ok ? { ok: true, data } : { ok: false, error: data?.error ?? `The server answered ${res.status}.` }
+  } catch {
+    return { ok: false, error: "We couldn't reach the crumbs backend. Is it running?" }
+  }
+}
+
+const salesPath = (businessId) => `/business/${encodeURIComponent(businessId)}/sales`
+
+/** { connected, source, label, connectedAt, … } — never credentials. */
+export const getSales = (businessId) => apiSend('GET', salesPath(businessId))
+export const disconnectSales = (businessId) => apiSend('DELETE', salesPath(businessId))
+
+/** Upload a sales export (Square "Items" CSV format). Starts a fresh report unless refreshReport is false. */
+export async function connectCsv(businessId, file, { refreshReport = true } = {}) {
+  if (file.size > 5 * 1024 * 1024) return { ok: false, error: 'That file is over 5 MB. Export a shorter period, like the last 8 weeks.' }
+  const content = await file.text()
+  return apiSend('POST', `${salesPath(businessId)}/csv?refreshReport=${refreshReport}`, { filename: file.name, content })
+}
+
+export const connectSquare = (businessId, { accessToken, environment }, { refreshReport = true } = {}) =>
+  apiSend('POST', `${salesPath(businessId)}/square?refreshReport=${refreshReport}`, { accessToken, environment })
+
+export const connectToast = (businessId, { clientId, clientSecret, restaurantGuid }, { refreshReport = true } = {}) =>
+  apiSend('POST', `${salesPath(businessId)}/toast?refreshReport=${refreshReport}`, { clientId, clientSecret, restaurantGuid })

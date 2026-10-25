@@ -109,48 +109,6 @@
   outline-offset: 1px;
 }
 
-.onb-foods {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.onb-food {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 14px 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.onb-food input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.onb-food:has(input:focus-visible) {
-  outline: 2px solid var(--honey);
-  outline-offset: 2px;
-}
-
-.onb-food.is-on {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: #fff;
-}
-
-.onb-food.is-on svg {
-  color: var(--honey-milk);
-}
-
 .onb-note {
   margin: 4px 0 16px;
   color: var(--muted);
@@ -200,4 +158,35 @@
 .onb-error {
   background: #fde8e4;
   color: #8a2a1c;
+}
+
+.onb-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 12px;
+}
+
+.onb-types button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.onb-types button.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.onb-types button:focus-visible {
+  outline: 2px solid var(--honey);
+  outline-offset: 2px;
 }

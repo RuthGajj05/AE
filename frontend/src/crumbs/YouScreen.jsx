@@ -2,7 +2,8 @@ import { signOut, useAuth } from './auth.js'
 import { ALERT_KINDS, AREAS, alertKindOn, initials, isBusiness, useAccount } from './account.js'
 import { FoodIcon } from './foodIcons.jsx'
 import { IconChevron } from './icons.jsx'
-import { CUISINES } from './places.js'
+import { CUISINES, matchCuisine } from './places.js'
+import { SalesConnect } from './SalesConnect.jsx'
 import './you.css'
 
 /** You tab: profile and settings. Insights and Rivals live on Home. */
@@ -140,20 +141,25 @@ export function YouScreen() {
                 <input value={account.business.address} onChange={(e) => setBusiness({ address: e.target.value })} />
               </label>
               <label className="you-field">
-                <span>Food</span>
-                <select value={account.business.cuisine} onChange={(e) => setBusiness({ cuisine: e.target.value })}>
-                  {CUISINES.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                <span>Kind of business</span>
+                <input
+                  value={account.business.type ?? account.business.cuisine ?? ''}
+                  onChange={(e) => setBusiness({ type: e.target.value, cuisine: matchCuisine(e.target.value) })}
+                  placeholder="e.g. bakery, cafe, sushi bar"
+                  maxLength={60}
+                />
               </label>
             </Row>
-            <div className="you-row is-static">
-              <span className="you-row-title">Connect Square</span>
-              <span className="sample-tag">Sample data</span>
-            </div>
+            <Row title="Sales data" detail="CSV, Square or Toast">
+              {account.business.id ? (
+                <SalesConnect businessId={account.business.id} />
+              ) : (
+                <p className="you-note">
+                  Your spot isn't set up with the crumbs backend yet. Set it up again from Home ("I run a spot"), then
+                  connect your sales here.
+                </p>
+              )}
+            </Row>
           </>
         )}
       </div>

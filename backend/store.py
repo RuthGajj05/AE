@@ -210,7 +210,8 @@ create table if not exists business_goals (
 );
 """
 
-_JSON_COLUMNS = {"profile", "details", "reviews", "scores", "highlights", "source_kinds", "payload", "compared_spot_ids", "data"}
+_JSON_COLUMNS = {"profile", "details", "reviews", "scores", "highlights", "source_kinds", "payload", "compared_spot_ids", "data",
+                 "sales_meta"}
 
 
 def now() -> str:
@@ -253,6 +254,11 @@ _ADDED_COLUMNS = {
         "low_stock_threshold": "real not null default 5",
         "supabase_business_id": "text",                     # Ruth's Supabase businesses.id, for the monitor
         "owner_user_id": "text",                            # Supabase Auth user who onboarded it (auth.py)
+        "kind": "text",                                     # owner's own words, e.g. "bakery" (business_type
+                                                            # holds the crumbs food type when there is one)
+        "sales_source": "text",                             # csv | square | toast (sales.py)
+        "sales_meta": "text not null default '{}'",         # non-secret connection details shown in the app
+        "sales_secret": "text",                             # encrypted POS credentials, never sent to the app
     },
 }
 

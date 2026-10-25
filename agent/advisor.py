@@ -102,7 +102,9 @@ def run(
     website: str | None = None, days: int = 56,
     *, owner_menu: OwnerMenu | dict | None = None, max_workers: int = 4,
     reports_dir: Path | str | None = None, use_history: bool = True, synthetic_sales: bool = False,
+    sales: dict | None = None,
 ) -> dict:
+    """`sales` is an already computed sales analysis (business_agent.analyze_rows); it replaces `sales_source`."""
     validate_max_workers(max_workers)
     _validate_days(days)
     explicit_menu = OwnerMenu.model_validate(owner_menu) if owner_menu is not None else None
@@ -110,7 +112,8 @@ def run(
     start = time.monotonic()
     # Sales analysis comes first (a CSV takes milliseconds) so every competitor agent can
     # price-check the owner's top sellers; competitor and presence research then run in parallel.
-    sales = load_sales(sales_source, days, synthetic=synthetic_sales)
+    if sales is None:
+        sales = load_sales(sales_source, days, synthetic=synthetic_sales)
     top_items = [i["item"] for i in sales.get("items", [])[:4]]
     owner_products = explicit_menu.products if explicit_menu else [i["item"] for i in sales.get("items", [])]
     with ThreadPoolExecutor(max_workers=2) as pool:

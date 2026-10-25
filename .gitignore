@@ -56,3 +56,7 @@ __pycache__/
 *.py[cod]
 private/
 state/
+
+# Owners' sales uploads and the key that encrypts their POS credentials (backend/sales.py)
+/backend/sales_uploads/
+/backend/.sales_key

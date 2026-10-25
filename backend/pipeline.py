@@ -267,7 +267,7 @@ def score_business(business_id: str, deep: bool = False) -> None:
 
         if deep:  # Ruth's full research, for market_intelligence.product_gaps ("gap" in insights)
             from agent import competitor_agent as ruth
-            report = ruth.research(b["name"], f"{cuisine} restaurant", b["address"] or b["location"], save=False, use_history=False)
+            report = ruth.research(b["name"], cuisines.research_type(b), b["address"] or b["location"], save=False, use_history=False)
             store.save_snapshot(report, business_id=business_id)
         store.update_business(business_id, scoring_status=status)
     except Exception as e:  # background job: record a plain-English reason instead of crashing
@@ -313,9 +313,12 @@ def insights(business_id: str) -> dict | None:
     b = store.get_business(business_id)
     if not b:
         return None
-    you, area = _business_context(b)
     base = {"businessId": business_id, "name": b["name"], "cuisine": b["business_type"], "status": b["scoring_status"],
             "error": b["scoring_error"], "demo": bool(b["demo"]), "period": "last 7 days"}
+    if not cuisines.get(b["business_type"]):  # e.g. a bakery: crumbs only scores its own food types
+        return {**base, "status": "unsupported", "reputation": None, "momentum": None, "edge": None, "breakdown": [],
+                "wait": None, "ambiance": None, "biggestDrag": None, "gap": _gap(business_id)}
+    you, area = _business_context(b)
     if you is None:
         return {**base, "reputation": None, "momentum": None, "edge": None, "breakdown": [], "wait": None,
                 "ambiance": None, "biggestDrag": None, "gap": None}
@@ -329,6 +332,9 @@ def rivals(business_id: str, days: int) -> dict | None:
     b = store.get_business(business_id)
     if not b:
         return None
+    if not cuisines.get(b["business_type"]):
+        return {"businessId": business_id, "days": days, "demo": bool(b["demo"]), "status": "unsupported",
+                "picksWon": 0, "picksLost": 0, "rivals": [], "whereYouWin": []}
     you, area = _business_context(b)
     base = {"businessId": business_id, "days": days, "demo": bool(b["demo"]), "status": b["scoring_status"]}
     if you is None:
