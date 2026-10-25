@@ -510,6 +510,12 @@ def start_monitor_run(business_id: str) -> str:
     return run_id
 
 
+def last_monitor_run(business_id: str) -> dict | None:
+    with _db() as db:
+        return _row(db.execute("select * from monitor_runs where business_id = ? order by started_at desc limit 1",
+                               (business_id,)).fetchone())
+
+
 def finish_monitor_run(run_id: str, *, error: str | None, changes: int, baseline: bool) -> None:
     with _db() as db:
         db.execute("update monitor_runs set finished_at = ?, status = ?, error = ?, changes_count = ?, is_baseline = ? where id = ?",

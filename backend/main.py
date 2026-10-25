@@ -15,6 +15,7 @@ from demo_data import demo_report
 from recommender import RecommendationsRequest, recommend, demo_tips
 
 import demo
+import scheduler
 import store
 from crumbs_api import router as crumbs_router
 
@@ -23,6 +24,7 @@ from crumbs_api import router as crumbs_router
 async def lifespan(_: FastAPI):
     store.init()
     demo.seed()  # the demo business and its flagged sample picks
+    scheduler.start()  # Mon/Wed/Fri competitor checks for app businesses (ALERT_SCHEDULE=off to disable)
     yield
 
 

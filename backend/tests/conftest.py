@@ -12,3 +12,4 @@ os.environ.pop("DEMO_MODE", None)
 # Sign-in is tested on its own (test_auth.py patches auth.enabled). Elsewhere it stays off, even though importing
 # agent/ loads the repo's .env, which may hold real Supabase keys.
 os.environ["AUTH_DISABLED"] = "1"
+os.environ["ALERT_SCHEDULE"] = "off"  # no background competitor checks during tests (test_scheduler.py runs ticks itself)
