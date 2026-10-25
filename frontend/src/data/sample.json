@@ -1,0 +1,90 @@
+{
+  "source": "sample",
+  "generatedAt": "2026-10-25T19:20:00Z",
+  "business": {
+    "name": "Rise & Knead Bakery",
+    "type": "Bakery",
+    "area": "Beacon Hill, Seattle",
+    "rating": 4.3,
+    "reviewCount": 142,
+    "avgPrice": 4.25,
+    "waitMin": 6
+  },
+  "competitors": [
+    {
+      "name": "Sunrise Sweet Shop",
+      "distanceMi": 0.4,
+      "rating": 4.2,
+      "reviewCount": 210,
+      "avgPrice": 3.95,
+      "waitMin": 4,
+      "topWeakness": "Inconsistent quality"
+    },
+    {
+      "name": "Columbia Crust",
+      "distanceMi": 1.8,
+      "rating": 4.1,
+      "reviewCount": 156,
+      "avgPrice": 4.25,
+      "waitMin": null,
+      "topWeakness": "Unfriendly service"
+    },
+    {
+      "name": "Pike Morning Bakery",
+      "distanceMi": 2.1,
+      "rating": 4.3,
+      "reviewCount": 1020,
+      "avgPrice": 5.5,
+      "waitMin": 10,
+      "topWeakness": "Long waits"
+    },
+    {
+      "name": "Golden Crumb Bakehouse",
+      "distanceMi": 3.2,
+      "rating": 4.6,
+      "reviewCount": 812,
+      "avgPrice": 5.25,
+      "waitMin": 9,
+      "topWeakness": "Long waits"
+    },
+    {
+      "name": "Little Oven Patisserie",
+      "distanceMi": 4.6,
+      "rating": 4.7,
+      "reviewCount": 1290,
+      "avgPrice": 5.75,
+      "waitMin": 14,
+      "topWeakness": "Too expensive"
+    }
+  ],
+  "reviewThemes": [
+    { "theme": "Long waits", "mentions": 57, "quote": "Twenty-minute line for one croissant on a Saturday." },
+    { "theme": "Too expensive", "mentions": 30, "quote": "Great pastry, but $6 is hard to justify every week." },
+    { "theme": "Nowhere to sit", "mentions": 24, "quote": "Had to eat standing outside in the rain." },
+    { "theme": "Unfriendly service", "mentions": 19, "quote": "Felt rushed and ignored at the counter." },
+    { "theme": "Inconsistent quality", "mentions": 14, "quote": "Perfect on Monday, burnt on Thursday." },
+    { "theme": "Closes too early", "mentions": 10, "quote": "Sold out and closed by 1pm." }
+  ],
+  "suggestions": [
+    {
+      "title": "Advertise how fast you are",
+      "why": "57 reviews of nearby bakeries complain about waits. Yours is about 6 min, versus about 9 min on average nearby. Put “ready in about 6 minutes” on your Google listing and storefront.",
+      "impact": "high"
+    },
+    {
+      "title": "Test a small price increase",
+      "why": "You average $4.25 per item; nearby bakeries average $4.94, 14% higher. Try +$0.35 on your top three items for two weeks and watch daily sales.",
+      "impact": "high"
+    },
+    {
+      "title": "Ask regulars for reviews",
+      "why": "You have 142 reviews; nearby bakeries average about 700, and your 4.3 rating sits just under their 4.4. A QR code at the register can close that gap within a month.",
+      "impact": "medium"
+    },
+    {
+      "title": "Show off your seating",
+      "why": "24 reviews say competitors have nowhere to sit. If you have tables, put them in your listing photos so people searching nearby see it.",
+      "impact": "low"
+    }
+  ]
+}

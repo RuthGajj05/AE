@@ -1,43 +1,36 @@
 # LocalEdge — frontend
 
-Business-side dashboard for neighborhood food businesses in Seattle. An owner enters a few facts about their shop
-(category, neighborhood, price of a benchmark item, typical wait, rating, review count) and sees:
+Competitor insights for small food businesses in Seattle. One page shows how a business compares with nearby
+competitors on price, wait time and rating, who those competitors are, what their customers complain about, and
+Claude's suggestions for what to do next.
 
-- how their price, wait, rating and review count compare to nearby competitors
-- ranked recommendations, each showing the numbers behind it
-- what customers complain about at competing businesses, and how to use that
-- market signals and a competitor table
-
-No login. The profile is kept in the browser's localStorage.
-
-## Backend
-
-The scraping and Claude tips live on the backend. The frontend talks to it through two endpoints, documented in
-**[API.md](API.md)** — that's the file to hand the backend team.
-
-Until the backend is ready the app uses mock data (`src/api/mock.ts`, fictional businesses in
-`src/data/sample.ts`) and labels it "Sample data". To switch to the real backend:
-
-```sh
-cp .env.example .env.local   # then set VITE_API_URL=http://localhost:8000 (no keys in this file)
-npm run dev
-```
-
-Add `?mock` to the URL to force sample data (demo fallback), or `?demo` to skip the form with a demo bakery.
+Vite + React + plain CSS. No login, no API keys.
 
 ## Run it
 
 ```sh
+cd frontend
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # type-check and production build
+npm run dev        # http://localhost:5173
 ```
+
+`npm run build` makes a production build in `dist/`.
+
+## Data
+
+- **`src/config.js`** — the one place that says where data comes from. `null` uses the bundled sample; set it to a
+  file in `public/` or the backend's URL when the scraper is ready.
+- **`src/data/sample.json`** — sample data (fictional businesses): 1 business, 5 competitors, 6 review themes,
+  4 suggestions.
+- **`src/data/adapter.js`** — `toDashboard(raw)` turns whatever JSON the scraper sends into what the UI renders,
+  with safe defaults for anything missing.
+- **Load JSON** button, or drag a `.json` file anywhere on the page, to show the scraper's output live.
+
+**[API.md](API.md)** is the data format to hand to the backend team.
 
 ## Layout
 
-- `src/api/client.ts` — every backend call, plus cleanup of messy responses
-- `src/api/mock.ts` — mock backend with the same response shapes
-- `src/types.ts` — shared request/response types (mirrors API.md)
-- `src/data/` — reference data (categories, neighborhoods, complaint themes) and sample competitors
-- `src/lib/stats.ts` — medians and complaint totals for display
-- `src/components/` — profile form, dashboard, charts, tables, loading and error states
+- `src/App.jsx` — loading the data, file drop, top bar
+- `src/components/` — header, "You vs nearby" cards, competitor table, complaint themes, suggestions,
+  loading/empty/error states
+- `src/styles.css` — design tokens (light + dark), glass cards, responsive layout
