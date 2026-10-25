@@ -1,8 +1,13 @@
 """Email the advisor report to the business owner.
 
-Plain SMTP, no extra dependencies. Works with any provider; for Gmail use an app password.
+Two ways to send, picked from what is set in .env (Resend wins if both are set):
 
-Environment (.env):
+  Resend (the same keys the competitor alerts already use):
+    RESEND_API_KEY, RESEND_FROM
+    Note: Resend's test sender (onboarding@resend.dev) only delivers to your own account email;
+    verify a domain in Resend to send to anyone.
+
+  Plain SMTP, any provider; for Gmail use an app password:
     SMTP_HOST       default smtp.gmail.com
     SMTP_PORT       default 587 (STARTTLS)
     SMTP_USER       login, e.g. you@gmail.com
@@ -20,6 +25,8 @@ import os
 import re
 import smtplib
 import sys
+
+import httpx
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -144,20 +151,49 @@ def build_email(report: dict, to: str, sender: str) -> EmailMessage:
     return msg
 
 
-def send_email(msg: EmailMessage) -> None:
-    user, password = os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASSWORD")
-    if not user or not password:
-        raise RuntimeError("Set SMTP_USER and SMTP_PASSWORD in .env to send email (see README: Email).")
+def email_configured() -> bool:
+    return bool(
+        (os.environ.get("RESEND_API_KEY") and os.environ.get("RESEND_FROM"))
+        or (os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"))
+    )
+
+
+def _send_resend(msg: EmailMessage) -> None:
+    resp = httpx.post(
+        "https://api.resend.com/emails",
+        headers={"Authorization": f"Bearer {os.environ['RESEND_API_KEY']}"},
+        json={
+            "from": msg["From"],
+            "to": [msg["To"]],
+            "subject": msg["Subject"],
+            "text": msg.get_body(("plain",)).get_content(),
+            "html": msg.get_body(("html",)).get_content(),
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+
+
+def _send_smtp(msg: EmailMessage) -> None:
     host, port = os.environ.get("SMTP_HOST", "smtp.gmail.com"), int(os.environ.get("SMTP_PORT", "587"))
     with smtplib.SMTP(host, port, timeout=30) as server:
         server.starttls()
-        server.login(user, password)
+        server.login(os.environ["SMTP_USER"], os.environ["SMTP_PASSWORD"])
         server.send_message(msg)
+
+
+def send_email(msg: EmailMessage) -> None:
+    if os.environ.get("RESEND_API_KEY") and os.environ.get("RESEND_FROM"):
+        _send_resend(msg)
+    elif os.environ.get("SMTP_USER") and os.environ.get("SMTP_PASSWORD"):
+        _send_smtp(msg)
+    else:
+        raise RuntimeError("Email isn't configured: set RESEND_API_KEY and RESEND_FROM, or SMTP_USER and SMTP_PASSWORD, in .env (see README: Email).")
 
 
 def email_report(report: dict, to: str, preview_dir: Path | None = None) -> str:
     """Send the report. With `preview_dir`, write the HTML there instead and send nothing."""
-    sender = os.environ.get("EMAIL_FROM") or os.environ.get("SMTP_USER") or "LocalEdge <noreply@localhost>"
+    sender = os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM") or os.environ.get("SMTP_USER") or "LocalEdge <noreply@localhost>"
     msg = build_email(report, to, sender)
     if preview_dir is not None:
         preview_dir.mkdir(exist_ok=True)

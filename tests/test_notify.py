@@ -40,11 +40,22 @@ with mock.patch("smtplib.SMTP") as smtp:
     ok("sent to the owner only", sent["To"] == "owner@example.com" and not sent["Bcc"] and not sent["Cc"])
     ok("reports success", "emailed to owner@example.com" in out)
 
+# 4b. Resend path (preferred when its keys are set)
+os.environ.update(RESEND_API_KEY="re_test", RESEND_FROM="LocalEdge <hi@example.com>")
+with mock.patch("httpx.post") as post, mock.patch("smtplib.SMTP") as smtp:
+    post.return_value.raise_for_status = lambda: None
+    notify.email_report(report, "owner@example.com")
+    ok("Resend used when configured (not SMTP)", post.called and not smtp.called)
+    sent = post.call_args.kwargs["json"]
+    ok("Resend payload: single recipient, html + text", sent["to"] == ["owner@example.com"] and "<html" in sent["html"] and sent["text"])
+    ok("Resend auth header", post.call_args.kwargs["headers"]["Authorization"] == "Bearer re_test")
+    ok("Resend sender used", sent["from"] == "LocalEdge <hi@example.com>")
+
 # 5. missing credentials -> clear error, nothing sent
-for k in ("SMTP_USER", "SMTP_PASSWORD"): os.environ.pop(k)
+for k in ("SMTP_USER", "SMTP_PASSWORD", "RESEND_API_KEY", "RESEND_FROM"): os.environ.pop(k, None)
 with mock.patch("smtplib.SMTP") as smtp:
     try: notify.email_report(report, "owner@example.com"); ok("errors without creds", False)
-    except RuntimeError as e: ok("errors without creds (clear message)", "SMTP_USER" in str(e) and not smtp.called)
+    except RuntimeError as e: ok("errors without creds (clear message)", "RESEND_API_KEY" in str(e) and not smtp.called)
 
 # 6. preview mode writes a file and sends nothing
 with mock.patch("smtplib.SMTP") as smtp:
