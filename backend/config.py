@@ -14,6 +14,11 @@ BACKEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BACKEND_DIR.parent
 load_dotenv(BACKEND_DIR / ".env")
 
+# Supabase's newer server key is often saved as SUPABASE_SECRET_KEY (sb_secret_…). Ruth's agent reads
+# SUPABASE_SERVICE_ROLE_KEY, which takes either kind, so hand it over under that name.
+if not os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip() and os.getenv("SUPABASE_SECRET_KEY", "").strip():
+    os.environ["SUPABASE_SERVICE_ROLE_KEY"] = os.environ["SUPABASE_SECRET_KEY"]
+
 # Ruth's scraper lives in agent/ at the repo root.
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))

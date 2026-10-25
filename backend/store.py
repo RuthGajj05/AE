@@ -1,9 +1,14 @@
 """All database access for the crumbs backend. Nothing else touches SQL.
 
-SQLite now (backend/crumbs.db); swap this one file for Supabase later. The first three tables mirror
-Ruth's Supabase schema (supabase/migrations/20261025000000_competitor_monitoring.sql): businesses,
-competitors, snapshots. crumbs adds spots, spot_scores, picks and business_goals, plus two caches
-(area_cache for 24h scored results, geocodes so an address is only looked up once).
+SQLite (backend/crumbs.db) is the backend's working copy. The first three tables mirror Ruth's Supabase
+schema (supabase/migrations/20261025000000_competitor_monitoring.sql): businesses, competitors, snapshots.
+crumbs adds spots, spot_scores, picks and business_goals, plus two caches (area_cache for 24h scored
+results, geocodes so an address is only looked up once).
+
+Supabase: when SUPABASE_URL and a server key are set (supabase_rest.py), every write the Lovable app reads
+is also sent to the crumbs tables (supabase/migrations/20261025120000_crumbs.sql): spots, spot_scores,
+picks, alerts and business_insights. Picks are then read back from Supabase too, since the app adds them
+there. Without those keys everything stays in SQLite, as before.
 
 JSON columns are stored as text and decoded on the way out. Picks are anonymous: no user id, no IP,
 no device or personal data, only which spots were compared and which one was chosen.
@@ -18,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import config
+import supabase_rest
 
 _lock = threading.Lock()
 
@@ -345,6 +351,13 @@ def upsert_spot(spot: dict) -> None:
              _dump(spot.get("details") or {}), _dump(spot.get("reviews") or []),
              spot.get("collection_status", "complete"), now()),
         )
+    supabase_rest.upsert("spots", {
+        "id": spot["id"], "name": spot["name"], "address": spot.get("address"),
+        "street": (spot.get("address") or "").split(",")[0] or None, "lat": spot.get("lat"), "lng": spot.get("lng"),
+        "price": spot.get("price"), "website": spot.get("website"), "rating": spot.get("rating"),
+        "platform_review_count": spot.get("platform_review_count"), "hours": spot.get("hours"),
+        "collection_status": spot.get("collection_status", "complete"), "updated_at": now(),
+    }, on_conflict="id")
 
 
 def get_spot(spot_id: str) -> dict | None:
@@ -361,6 +374,12 @@ def save_score(spot_id: str, cuisine: str, score: dict) -> None:
              score.get("waitMinutes"), score.get("ambiancePct"), score.get("ambianceMentionRate"),
              score.get("reviewCount", 0), _dump(score.get("sourceKinds") or []), score.get("model"), now()),
         )
+    supabase_rest.upsert("spot_scores", {
+        "spot_id": spot_id, "cuisine": cuisine, "scores": score["scores"], "highlights": score.get("highlights") or {},
+        "summary": score.get("summary"), "wait_minutes": score.get("waitMinutes"), "ambiance_pct": score.get("ambiancePct"),
+        "ambiance_mention_rate": score.get("ambianceMentionRate"), "review_count": score.get("reviewCount", 0),
+        "source_kinds": score.get("sourceKinds") or [], "model": score.get("model"), "scored_at": now(),
+    }, on_conflict="spot_id,cuisine")
 
 
 def get_score(spot_id: str, cuisine: str) -> dict | None:
@@ -386,6 +405,34 @@ def put_area(area_key: str, *, cuisine: str, lat: float, lng: float, radius_mi: 
             " values (?, ?, ?, ?, ?, ?, ?, ?)",
             (area_key, cuisine, lat, lng, radius_mi, _dump(payload), status, payload.get("scrapedAt") or now()),
         )
+    publish_area(payload, area=_area_name(lat, lng, area_key))
+
+
+def _area_name(lat: float, lng: float, area_key: str) -> str:
+    hill = config.CAPITOL_HILL
+    return "capitol-hill" if abs(lat - hill["lat"]) < 0.002 and abs(lng - hill["lng"]) < 0.002 else area_key
+
+
+def publish_area(payload: dict, *, area: str = "capitol-hill", demo: bool = False) -> None:
+    """One scored food type (the GET /api/spots shape) → Supabase spots + spot_scores, with the pick and bestAt lines."""
+    if not supabase_rest.configured() or not payload.get("spots"):
+        return
+    cuisine, stamp = payload["cuisine"], payload.get("scrapedAt") or now()
+    supabase_rest.upsert("spots", [{
+        "id": s["id"], "name": s["name"], "address": s.get("address"), "street": s.get("street"),
+        "lat": s.get("lat"), "lng": s.get("lng"), "price": s.get("price"), "phone": s.get("phone"),
+        "open_until": s.get("openUntil"), "rating": s.get("rating"), "platform_review_count": s.get("platformReviewCount"),
+        "collection_status": s.get("collectionStatus") or "complete", "demo": demo, "updated_at": stamp,
+    } for s in payload["spots"]], on_conflict="id")
+    # Only this run's pick stays the pick for the food type and area.
+    supabase_rest.update("spot_scores", {"cuisine": f"eq.{cuisine}", "area": f"eq.{area}", "is_pick": "is.true"}, {"is_pick": False})
+    supabase_rest.upsert("spot_scores", [{
+        "spot_id": s["id"], "cuisine": cuisine, "area": area, "scores": s.get("scores") or {},
+        "wait_minutes": s.get("waitMinutes"), "ambiance_pct": s.get("ambiancePct"),
+        "ambiance_mention_rate": s.get("ambianceMentionRate"), "review_count": s.get("reviewCount") or 0,
+        "source_kinds": s.get("sourceKinds") or [], "best_at": s.get("bestAt"), "reason": s.get("reason"),
+        "is_pick": bool(s.get("pick")), "demo": demo, "scored_at": stamp,
+    } for s in payload["spots"]], on_conflict="spot_id,cuisine")
 
 
 def cache_stats() -> dict:
@@ -425,12 +472,23 @@ def put_geocode(address: str, lat: float | None, lng: float | None, source: str)
 
 def add_pick(cuisine: str, chosen_spot_id: str, compared_spot_ids: list[str], *, demo: bool = False,
              created_at: str | None = None) -> None:
+    stamp = created_at or now()
     with _db() as db:
         db.execute("insert into picks (cuisine, chosen_spot_id, compared_spot_ids, created_at, demo) values (?, ?, ?, ?, ?)",
-                   (cuisine, chosen_spot_id, _dump(compared_spot_ids), created_at or now(), int(demo)))
+                   (cuisine, chosen_spot_id, _dump(compared_spot_ids), stamp, int(demo)))
+    supabase_rest.insert("picks", {"cuisine": cuisine, "chosen_spot_id": chosen_spot_id,
+                                   "compared_spot_ids": compared_spot_ids, "demo": demo, "created_at": stamp})
 
 
 def picks_since(cuisine: str, since: datetime, *, include_demo: bool) -> list[dict]:
+    # With Supabase on, its picks table is the full record (the Lovable app adds picks there); SQLite if it's unreachable.
+    params = {"cuisine": f"eq.{cuisine}", "created_at": f"gte.{since.isoformat(timespec='seconds')}",
+              "order": "created_at.asc", "select": "cuisine,chosen_spot_id,compared_spot_ids,created_at,demo"}
+    if not include_demo:
+        params["demo"] = "is.false"
+    remote = supabase_rest.select("picks", params)
+    if remote is not None:
+        return remote
     query = "select * from picks where cuisine = ? and created_at >= ?" + ("" if include_demo else " and demo = 0")
     with _db() as db:
         rows = db.execute(query + " order by created_at", (cuisine, since.isoformat(timespec="seconds"))).fetchall()
@@ -520,15 +578,57 @@ def find_spot_by_name(name: str) -> dict | None:
 
 def add_alert(alert: dict) -> bool:
     """Insert unless an alert with the same dedupe_key exists. Returns whether it was added."""
+    alert = {**alert, "id": alert.get("id") or uuid.uuid4().hex, "created_at": alert.get("created_at") or now()}
     with _db() as db:
         cur = db.execute(
             "insert or ignore into alerts (id, kind, audience, business_id, spot_id, cuisine, title, detail, lat, lng, dedupe_key,"
             " created_at, demo) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (alert.get("id") or uuid.uuid4().hex, alert["kind"], alert["audience"], alert.get("business_id"), alert.get("spot_id"),
+            (alert["id"], alert["kind"], alert["audience"], alert.get("business_id"), alert.get("spot_id"),
              alert.get("cuisine"), alert["title"], alert["detail"], alert.get("lat"), alert.get("lng"), alert.get("dedupe_key"),
-             alert.get("created_at") or now(), int(alert.get("demo", False))),
+             alert["created_at"], int(alert.get("demo", False))),
         )
-        return cur.rowcount > 0
+        added = cur.rowcount > 0
+    if added and supabase_rest.configured():
+        # Supabase keys business alerts by Ruth's businesses.id (uuid), so only linked businesses can have them.
+        local = get_business(alert["business_id"]) if alert.get("business_id") else None
+        remote_id = (local or {}).get("supabase_business_id")
+        if alert["audience"] == "consumer" or remote_id:
+            publish_alerts([{**alert, "business_id": remote_id}])
+    return added
+
+
+def publish_alerts(alerts: list[dict]) -> None:
+    """Alerts in the store's snake_case shape → Supabase. business_id must already be a Supabase businesses.id."""
+    supabase_rest.upsert("alerts", [{
+        "id": a["id"], "kind": a["kind"], "audience": a["audience"], "business_id": a.get("business_id"),
+        "spot_id": a.get("spot_id"), "cuisine": a.get("cuisine"), "title": a["title"], "detail": a["detail"],
+        "lat": a.get("lat"), "lng": a.get("lng"), "dedupe_key": a.get("dedupe_key"), "demo": bool(a.get("demo", False)),
+        "created_at": a.get("created_at") or now(),
+    } for a in alerts], on_conflict="id", ignore_duplicates=True)
+
+
+# ---------- Supabase-only (the sync script) ----------
+
+def remote_businesses() -> list[dict]:
+    """Ruth's businesses rows (owners create them from the Lovable app), or [] when Supabase is off."""
+    return supabase_rest.select("businesses", {"select": "*", "order": "created_at.asc"}) or []
+
+
+def business_for_remote(remote_id: str) -> dict | None:
+    with _db() as db:
+        return _row(db.execute("select * from businesses where supabase_business_id = ?", (remote_id,)).fetchone())
+
+
+def remote_changes(remote_id: str, since: str) -> list[dict]:
+    """Ruth's monitor changes for one Supabase business (her changes table), newest first."""
+    return supabase_rest.select("changes", {"business_id": f"eq.{remote_id}", "created_at": f"gte.{since}",
+                                            "order": "created_at.desc", "limit": 100, "select": "*"}) or []
+
+
+def save_business_insights(remote_id: str, *, cuisine: str | None, insights: dict, rivals: dict, demo: bool = False) -> None:
+    supabase_rest.upsert("business_insights", {
+        "business_id": remote_id, "cuisine": cuisine, "insights": insights, "rivals": rivals, "demo": demo, "updated_at": now(),
+    }, on_conflict="business_id")
 
 
 def list_alerts(*, audience: str, business_id: str | None = None, since: str | None = None) -> list[dict]:

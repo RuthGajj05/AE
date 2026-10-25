@@ -49,6 +49,21 @@ with `.venv/bin/python scripts/build_demo_fixtures.py ../frontend/src/crumbs/dat
 The first monitor run per business saves a baseline. `top_rated` alerts come from re-scoring areas
 (`scripts/prewarm.py --refresh`). See API.md → Alerts.
 
+### Before a demo: fill Supabase for the Lovable app
+
+Apply both files in `supabase/migrations/` to the Supabase project (SQL editor, Ruth's first), set `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SECRET_KEY`) in `backend/.env`, then:
+
+```sh
+.venv/bin/python scripts/sync_to_supabase.py --demo          # sample spots + alerts, no AI keys needed
+.venv/bin/python scripts/sync_to_supabase.py                 # live: score 5 food types, monitor, advisor, Square
+.venv/bin/python scripts/sync_to_supabase.py --skip-advisor  # live, without Ruth's slow advisor run
+```
+
+It scores the five food types for Capitol Hill, then for each business an owner created in the app: Home's
+insights and rivals, Ruth's monitor and advisor, and the Square stock alerts (`--square-business` picks which
+business the token belongs to when there are several). It exits non-zero if any Supabase write fails.
+
 ### Tests
 
 ```sh
@@ -60,6 +75,7 @@ These cover:
 - every endpoint in demo mode
 - the live path, with the collector and Claude replaced by fakes
 - the exact Claude request shape, against a mock transport
+- the Supabase writes and `sync_to_supabase.py`, against a fake Supabase API
 
 The tests make no network calls.
 
@@ -73,7 +89,9 @@ The tests make no network calls.
 | `collect.py` | Drives Ruth's agent (`agent/`): `fast_competitors` by default, `competitor_agent.research` with `depth=deep` |
 | `reviewer.py` | One `claude-sonnet-5-5` call per spot: 0–100 attribute scores from review text, validated with Pydantic |
 | `scoring.py` | Pure math: wait median, ambiance, pick, best-at, rival gaps, insights |
-| `store.py` | **All** database access (SQLite now, `crumbs.db`; swap this one file for Supabase later) |
+| `store.py` | **All** database access: SQLite (`crumbs.db`), plus Supabase writes when its keys are set |
+| `supabase_rest.py` | Supabase REST calls with the server key, used only by `store.py` |
+| `scripts/sync_to_supabase.py` | Fills Supabase for the Lovable app before a demo |
 | `geo.py` | Census geocoder + Nominatim; Google Places or OSM place search |
 | `alerts.py` | Alerts: Ruth's monitor (via a SQLite adapter, or her Supabase store), Square stock, top-rated |
 | `square_inventory.py` | Square IN_STOCK counts, a port of Manny's `lib/square.ts` |

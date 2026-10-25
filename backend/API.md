@@ -234,7 +234,7 @@ Demo responses add `"demo": true` to each alert. `spotId` can be `null` (e.g. a 
 | `low_stock` | business | A tracked item fell to or below the owner's threshold (`lowStockThreshold`, default 5; same rule as Manny's `lib/inventory.ts`). Owner only; includes the count. |
 | `top_rated` | consumer | A spot became #1 for an attribute in its food type and area since the previous scoring of that area. The first scoring is a baseline. |
 
-When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, the monitor uses Ruth's `SupabaseStore` and monitor
+When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SECRET_KEY`) are set, the monitor uses Ruth's `SupabaseStore` and monitor
 alerts are read from her Supabase `changes` table (the crumbs business needs its `supabase_business_id`).
 Otherwise everything is in SQLite.
 
