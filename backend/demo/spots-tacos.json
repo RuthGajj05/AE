@@ -1,0 +1,147 @@
+{
+  "cuisine": "tacos",
+  "spots": [
+    {
+      "id": "tacos-maiz",
+      "name": "Ma\u00edz Taquer\u00eda",
+      "lat": 47.6207,
+      "lng": -122.3204,
+      "address": "Broadway E, Seattle, WA",
+      "street": "Broadway E",
+      "price": "$",
+      "distanceMi": 0.12,
+      "scores": {
+        "tortilla": 94,
+        "meat": 90,
+        "salsa": 86,
+        "value": 88
+      },
+      "waitMinutes": 11,
+      "ambiancePct": 72,
+      "ambianceMentionRate": 0.2,
+      "bestAt": "Best tortillas",
+      "reason": "Fresh-pressed corn tortillas, made to order.",
+      "reviewCount": 512,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": true,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0141"
+    },
+    {
+      "id": "tacos-al-pastor-hill",
+      "name": "Al Pastor Hill",
+      "lat": 47.6141,
+      "lng": -122.319,
+      "address": "E Pike St, Seattle, WA",
+      "street": "E Pike St",
+      "price": "$",
+      "distanceMi": 0.35,
+      "scores": {
+        "tortilla": 82,
+        "meat": 95,
+        "salsa": 84,
+        "value": 86
+      },
+      "waitMinutes": 15,
+      "ambiancePct": 66,
+      "ambianceMentionRate": 0.15,
+      "bestAt": "Best meat",
+      "reason": "The al pastor carved off the spit gets raves.",
+      "reviewCount": 301,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "1 AM",
+      "phone": "(206) 555-0142"
+    },
+    {
+      "id": "tacos-salsa-roja",
+      "name": "Salsa Roja",
+      "lat": 47.6155,
+      "lng": -122.3138,
+      "address": "15th Ave, Seattle, WA",
+      "street": "15th Ave",
+      "price": "$$",
+      "distanceMi": 0.41,
+      "scores": {
+        "tortilla": 78,
+        "meat": 80,
+        "salsa": 95,
+        "value": 74
+      },
+      "waitMinutes": 12,
+      "ambiancePct": 83,
+      "ambianceMentionRate": 0.25,
+      "bestAt": "Best salsa",
+      "reason": "A six-salsa bar that reviewers call addictive.",
+      "reviewCount": 187,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "9 PM",
+      "phone": "(206) 555-0143"
+    },
+    {
+      "id": "tacos-window",
+      "name": "Taco Window",
+      "lat": 47.6186,
+      "lng": -122.3229,
+      "address": "E Denny Way, Seattle, WA",
+      "street": "E Denny Way",
+      "price": "$",
+      "distanceMi": 0.09,
+      "scores": {
+        "tortilla": 70,
+        "meat": 74,
+        "salsa": 72,
+        "value": 92
+      },
+      "waitMinutes": 4,
+      "ambiancePct": 55,
+      "ambianceMentionRate": 0.1,
+      "bestAt": "Fastest",
+      "reason": "Walk-up window, tacos in under five minutes.",
+      "reviewCount": 244,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "11 PM",
+      "phone": "(206) 555-0144"
+    }
+  ],
+  "pickId": "tacos-maiz",
+  "pickReason": "Fresh-pressed corn tortillas, made to order.",
+  "areaAverages": {
+    "tortilla": 81,
+    "meat": 85,
+    "salsa": 84,
+    "value": 85,
+    "waitMinutes": 10,
+    "ambiancePct": 69
+  },
+  "reviewsRead": 1244,
+  "scrapedAt": "2026-10-25T17:00:00+00:00",
+  "source": "demo",
+  "demo": true,
+  "collectionStatus": "complete",
+  "caveats": [
+    "Sample data: made-up spot names and scores, for the stage demo. Not real businesses."
+  ]
+}

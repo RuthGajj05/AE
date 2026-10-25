@@ -1,0 +1,35 @@
+{
+  "note": "Sample data: made-up spot names and scores, for the stage demo. Not real businesses.",
+  "id": "biz-tamago",
+  "name": "Tamago Sushi",
+  "cuisine": "sushi",
+  "area": "Capitol Hill",
+  "goals": [
+    "Shorter waits",
+    "Rice"
+  ],
+  "you": {
+    "id": "biz-tamago",
+    "name": "Tamago Sushi",
+    "cuisine": "sushi",
+    "scores": {
+      "rice": 78,
+      "fish": 80,
+      "seaweed": 94,
+      "value": 85
+    },
+    "waitMinutes": 18,
+    "ambiancePct": 62,
+    "ambianceMentionRate": 0.25,
+    "reviewCount": 180
+  },
+  "seedPicks": {
+    "won": 9,
+    "lostTo": {
+      "sushi-hikari": 11,
+      "sushi-umi": 5,
+      "sushi-pike-roll": 3,
+      "sushi-nori-house": 2
+    }
+  }
+}

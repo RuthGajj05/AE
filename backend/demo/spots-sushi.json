@@ -1,0 +1,147 @@
+{
+  "cuisine": "sushi",
+  "spots": [
+    {
+      "id": "sushi-hikari",
+      "name": "Hikari Sushi Bar",
+      "lat": 47.6152,
+      "lng": -122.3185,
+      "address": "E Pike St, Seattle, WA",
+      "street": "E Pike St",
+      "price": "$$$",
+      "distanceMi": 0.29,
+      "scores": {
+        "rice": 93,
+        "fish": 91,
+        "seaweed": 84,
+        "value": 72
+      },
+      "waitMinutes": 9,
+      "ambiancePct": 81,
+      "ambianceMentionRate": 0.25,
+      "bestAt": "Best rice",
+      "reason": "Reviewers keep praising the warm, well-seasoned rice.",
+      "reviewCount": 412,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": true,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0101"
+    },
+    {
+      "id": "sushi-umi",
+      "name": "Umi Counter",
+      "lat": 47.6229,
+      "lng": -122.3132,
+      "address": "15th Ave E, Seattle, WA",
+      "street": "15th Ave E",
+      "price": "$$$$",
+      "distanceMi": 0.45,
+      "scores": {
+        "rice": 86,
+        "fish": 95,
+        "seaweed": 80,
+        "value": 58
+      },
+      "waitMinutes": 16,
+      "ambiancePct": 88,
+      "ambianceMentionRate": 0.5,
+      "bestAt": "Freshest fish",
+      "reason": "Called the freshest fish on the Hill, but it's pricey.",
+      "reviewCount": 298,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "11 PM",
+      "phone": "(206) 555-0102"
+    },
+    {
+      "id": "sushi-nori-house",
+      "name": "Nori House",
+      "lat": 47.6168,
+      "lng": -122.3237,
+      "address": "E Olive Way, Seattle, WA",
+      "street": "E Olive Way",
+      "price": "$$",
+      "distanceMi": 0.2,
+      "scores": {
+        "rice": 74,
+        "fish": 76,
+        "seaweed": 92,
+        "value": 81
+      },
+      "waitMinutes": 12,
+      "ambiancePct": 70,
+      "ambianceMentionRate": 0.2,
+      "bestAt": "Fresh nori",
+      "reason": "Hand rolls come with crisp nori wrapped right before serving.",
+      "reviewCount": 236,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "9 PM",
+      "phone": "(206) 555-0103"
+    },
+    {
+      "id": "sushi-pike-roll",
+      "name": "Pike Roll Co.",
+      "lat": 47.6137,
+      "lng": -122.3262,
+      "address": "Bellevue Ave, Seattle, WA",
+      "street": "Bellevue Ave",
+      "price": "$",
+      "distanceMi": 0.44,
+      "scores": {
+        "rice": 68,
+        "fish": 66,
+        "seaweed": 70,
+        "value": 93
+      },
+      "waitMinutes": 7,
+      "ambiancePct": 58,
+      "ambianceMentionRate": 0.15,
+      "bestAt": "Best value",
+      "reason": "Big rolls for the price and fast counter service.",
+      "reviewCount": 301,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "9:30 PM",
+      "phone": "(206) 555-0104"
+    }
+  ],
+  "pickId": "sushi-hikari",
+  "pickReason": "Reviewers keep praising the warm, well-seasoned rice.",
+  "areaAverages": {
+    "rice": 80,
+    "fish": 82,
+    "seaweed": 82,
+    "value": 76,
+    "waitMinutes": 11,
+    "ambiancePct": 74
+  },
+  "reviewsRead": 1247,
+  "scrapedAt": "2026-10-25T17:00:00+00:00",
+  "source": "demo",
+  "demo": true,
+  "collectionStatus": "complete",
+  "caveats": [
+    "Sample data: made-up spot names and scores, for the stage demo. Not real businesses."
+  ]
+}

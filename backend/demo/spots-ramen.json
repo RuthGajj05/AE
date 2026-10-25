@@ -1,0 +1,152 @@
+{
+  "cuisine": "ramen",
+  "spots": [
+    {
+      "id": "ramen-tonkotsu-hill",
+      "name": "Tonkotsu Hill",
+      "lat": 47.6201,
+      "lng": -122.3198,
+      "address": "Broadway E, Seattle, WA",
+      "street": "Broadway E",
+      "price": "$$",
+      "distanceMi": 0.09,
+      "scores": {
+        "broth": 94,
+        "noodles": 88,
+        "egg": 86,
+        "chashu": 90,
+        "value": 76
+      },
+      "waitMinutes": 13,
+      "ambiancePct": 79,
+      "ambianceMentionRate": 0.33,
+      "bestAt": "Richest broth",
+      "reason": "The 12-hour pork broth comes up in almost every review.",
+      "reviewCount": 520,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": true,
+      "openUntil": "11 PM",
+      "phone": "(206) 555-0111"
+    },
+    {
+      "id": "ramen-menya-kaze",
+      "name": "Menya Kaze",
+      "lat": 47.6146,
+      "lng": -122.3168,
+      "address": "12th Ave, Seattle, WA",
+      "street": "12th Ave",
+      "price": "$$",
+      "distanceMi": 0.36,
+      "scores": {
+        "broth": 85,
+        "noodles": 93,
+        "egg": 80,
+        "chashu": 78,
+        "value": 74
+      },
+      "waitMinutes": 15,
+      "ambiancePct": 74,
+      "ambianceMentionRate": 0.25,
+      "bestAt": "Best noodles",
+      "reason": "House-made noodles with a springy bite people love.",
+      "reviewCount": 344,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0112"
+    },
+    {
+      "id": "ramen-ajitama",
+      "name": "Ajitama Bar",
+      "lat": 47.6178,
+      "lng": -122.3121,
+      "address": "15th Ave, Seattle, WA",
+      "street": "15th Ave",
+      "price": "$$",
+      "distanceMi": 0.42,
+      "scores": {
+        "broth": 80,
+        "noodles": 79,
+        "egg": 95,
+        "chashu": 74,
+        "value": 72
+      },
+      "waitMinutes": 18,
+      "ambiancePct": 86,
+      "ambianceMentionRate": 0.33,
+      "bestAt": "Best egg",
+      "reason": "Jammy marinated eggs are the thing to order here.",
+      "reviewCount": 198,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0113"
+    },
+    {
+      "id": "ramen-slurp-shop",
+      "name": "Slurp Shop",
+      "lat": 47.6189,
+      "lng": -122.3247,
+      "address": "E Denny Way, Seattle, WA",
+      "street": "E Denny Way",
+      "price": "$",
+      "distanceMi": 0.17,
+      "scores": {
+        "broth": 72,
+        "noodles": 75,
+        "egg": 70,
+        "chashu": 68,
+        "value": 92
+      },
+      "waitMinutes": 7,
+      "ambiancePct": 60,
+      "ambianceMentionRate": 0.15,
+      "bestAt": "Best value",
+      "reason": "Solid bowls under $14 and quick turnover at lunch.",
+      "reviewCount": 276,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "9 PM",
+      "phone": "(206) 555-0114"
+    }
+  ],
+  "pickId": "ramen-tonkotsu-hill",
+  "pickReason": "The 12-hour pork broth comes up in almost every review.",
+  "areaAverages": {
+    "broth": 83,
+    "noodles": 84,
+    "egg": 83,
+    "chashu": 78,
+    "value": 78,
+    "waitMinutes": 13,
+    "ambiancePct": 75
+  },
+  "reviewsRead": 1338,
+  "scrapedAt": "2026-10-25T17:00:00+00:00",
+  "source": "demo",
+  "demo": true,
+  "collectionStatus": "complete",
+  "caveats": [
+    "Sample data: made-up spot names and scores, for the stage demo. Not real businesses."
+  ]
+}

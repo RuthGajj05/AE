@@ -1,0 +1,85 @@
+{
+  "note": "Sample data: made-up spot names and scores, for the stage demo. Not real businesses.",
+  "results": [
+    {
+      "placeId": "demo:mock-victrola",
+      "name": "Victrola Coffee Roasters",
+      "address": "310 E Pike St, Seattle",
+      "lat": 47.614,
+      "lng": -122.3268,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-molly-moons",
+      "name": "Molly Moon's Homemade Ice Cream",
+      "address": "917 E Pine St, Seattle",
+      "lat": 47.6154,
+      "lng": -122.3206,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-oddfellows",
+      "name": "Oddfellows Cafe + Bar",
+      "address": "1525 10th Ave, Seattle",
+      "lat": 47.6148,
+      "lng": -122.3191,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-dicks",
+      "name": "Dick's Drive-In",
+      "address": "115 Broadway E, Seattle",
+      "lat": 47.6194,
+      "lng": -122.3212,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-tacos-chukis",
+      "name": "Tacos Chukis",
+      "address": "219 Broadway E, Seattle",
+      "lat": 47.6205,
+      "lng": -122.3209,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-rione-xiii",
+      "name": "Rione XIII",
+      "address": "401 15th Ave E, Seattle",
+      "lat": 47.6226,
+      "lng": -122.3127,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-nue",
+      "name": "Nue",
+      "address": "1519 14th Ave, Seattle",
+      "lat": 47.6147,
+      "lng": -122.3145,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-poquitos",
+      "name": "Poquitos",
+      "address": "1000 E Pike St, Seattle",
+      "lat": 47.6139,
+      "lng": -122.3199,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-pettirosso",
+      "name": "Caf\u00e9 Pettirosso",
+      "address": "1101 E Pike St, Seattle",
+      "lat": 47.6138,
+      "lng": -122.3176,
+      "source": "demo"
+    },
+    {
+      "placeId": "demo:mock-glos",
+      "name": "Glo's",
+      "address": "1621 E Olive Way, Seattle",
+      "lat": 47.6181,
+      "lng": -122.3251,
+      "source": "demo"
+    }
+  ]
+}
