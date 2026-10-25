@@ -223,7 +223,7 @@ Then schedule:
 
 To turn it on:
 1. A repo admin adds these under **Settings → Secrets and variables → Actions → New repository secret**: `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `GOOGLE_PLACES_API_KEY`, `RESEND_API_KEY`, `RESEND_FROM`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`.
-2. Put the workflow file on `main`. GitHub only runs scheduled workflows from the default branch. The workflow checks out this `scraping` branch to run the Python code, so only that one file needs to be on `main`.
+2. Put the workflow file on `main`. GitHub only runs scheduled workflows from the default branch. The workflow checks out the `app` branch to run the Python code, so only that one file needs to be on `main`.
 
 Scheduled runs can start a few minutes late. Once the cloud schedule works, remove the laptop cron job (`crontab -r`) so businesses aren't checked twice.
 
