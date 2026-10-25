@@ -213,7 +213,7 @@ test('API rejects cross-origin research and oversized bodies before invoking Cla
   const route = modules({ 'cloudflare:workers': { env: { ANTHROPIC_API_KEY: 'test-placeholder' } } })('app/api/research/route.ts');
   const crossOrigin = await route.POST(new Request('https://nearby.site/api/research', { method: 'POST', headers: { origin: 'https://unrelated.com', 'content-type': 'application/json' }, body: '{}' }));
   assert.equal(crossOrigin.status, 403);
-  const oversized = await route.POST(new Request('https://nearby.site/api/research', { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'x'.repeat(5001) }));
+  const oversized = await route.POST(new Request('https://nearby.site/api/research', { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'x'.repeat(20001) }));
   assert.equal(oversized.status, 413);
 });
 test('API clearly reports missing provider configuration', async () => {
@@ -346,4 +346,128 @@ test('accepts longer verified quotes and checklists while keeping displayed exce
   data.sourceNotes[0].excerpt = `${quote} We guarantee every customer will double their revenue.`;
   const forged = assembleReport(data, refs, input(), checkedAt);
   assert.equal(forged.sources[0].excerpt, refs[0].excerpt, 'A forged long quote must fall back to actual retrieved text.');
+});
+
+// Owner-provided business context is optional and never becomes fetched evidence.
+test('accepts legacy website-only input and removes blank questionnaire answers', () => {
+  const legacy = input();
+  assert.equal(legacy.goal, '');
+  assert.deepEqual(legacy.profile, {});
+  const blank = parseInput({ businessWebsite: OWNER, competitors: [RIVAL], goal: '  ', profile: { businessType: ' ', location: '\n', offerings: '', customers: '  ', currentApproach: '', constraints: '\t' } });
+  assert.equal(blank.goal, '');
+  assert.deepEqual(blank.profile, {});
+  assert.equal(parseInput({ businessWebsite: OWNER, competitors: [RIVAL], goal: `  ${'x'.repeat(400)}  ` }).goal.length, 400);
+  assert.throws(() => parseInput({ businessWebsite: OWNER, competitors: [RIVAL], goal: 'x'.repeat(401) }));
+  const result = assembleReport(generated(), evidence(), blank, checkedAt);
+  assert.equal(result.ownerContext, undefined, 'Empty answers must not be presented as owner-provided facts.');
+});
+test('validates questionnaire shape, known fields, and individual length limits', () => {
+  const limits = { businessType: 100, location: 160, offerings: 600, customers: 400, currentApproach: 600, constraints: 600 };
+  for (const [key, maximum] of Object.entries(limits)) {
+    assert.equal(parseInput({ businessWebsite: OWNER, competitors: [RIVAL], profile: { [key]: 'x'.repeat(maximum) } }).profile[key].length, maximum);
+    assert.throws(() => parseInput({ businessWebsite: OWNER, competitors: [RIVAL], profile: { [key]: 'x'.repeat(maximum + 1) } }), undefined, key);
+    assert.throws(() => parseInput({ businessWebsite: OWNER, competitors: [RIVAL], profile: { [key]: 7 } }), undefined, key);
+  }
+  for (const profile of [null, [], 'not an object', { madeUpField: 'extra' }, { constraints: null }, { offerings: ['bread'] }]) {
+    assert.throws(() => parseInput({ businessWebsite: OWNER, competitors: [RIVAL], profile }));
+  }
+});
+test('retains a normalized owner snapshot separately from sources and ignores model replacements', () => {
+  const submitted = parseInput({ businessWebsite: OWNER, competitors: [RIVAL], goal: '  More weekday pickup orders  ', profile: { businessType: '  Bakery  ', location: '  Fremont, Seattle  ', offerings: '  Bread and pastry boxes  ', customers: '  Nearby office workers  ', currentApproach: '  We already send an email newsletter  ', constraints: '  No new products; two hours per week  ' } });
+  const expected = { goal: 'More weekday pickup orders', profile: { businessType: 'Bakery', location: 'Fremont, Seattle', offerings: 'Bread and pastry boxes', customers: 'Nearby office workers', currentApproach: 'We already send an email newsletter', constraints: 'No new products; two hours per week' } };
+  const model = generated();
+  model.ownerContext = { goal: 'Fabricated goal', profile: { constraints: 'Unlimited budget' } };
+  const report = assembleReport(model, evidence(), submitted, checkedAt);
+  assert.deepEqual(report.ownerContext, expected);
+  assert.deepEqual(report.sources.map(s => s.id), ['s1', 's2']);
+  assert.ok(report.sources.every(source => !source.excerpt.includes('two hours per week')));
+  assert.ok(report.limitations.some(value => /owner|provided|questionnaire/i.test(value)), 'The report should disclose that submitted context is not independent website evidence.');
+  model.recommendations[0].sourceIds.push('owner-context');
+  assert.throws(() => assembleReport(model, evidence(), submitted, checkedAt), /unverified source/);
+});
+test('keeps an explicit goal in the owner snapshot even when the questionnaire is skipped', () => {
+  const submitted = parseInput({ businessWebsite: OWNER, competitors: [RIVAL], goal: 'More weekday customers' });
+  const report = assembleReport(generated(), evidence(), submitted, checkedAt);
+  assert.deepEqual(report.ownerContext, { goal: 'More weekday customers', profile: {} });
+});
+test('questionnaire answers cannot replace missing website evidence', async t => {
+  const calls = mockFetch(t, [
+    { body: { content: [fetched(RIVAL)] } },
+    { body: { content: [fetched()] } },
+  ]);
+  const ownerInput = { businessWebsite: OWNER, competitors: [RIVAL], profile: { offerings: 'The owner says this bakery sells bread.', constraints: 'Two hours available per week.' } };
+  await assert.rejects(() => research(ownerInput, 'test-placeholder'), /Your website could not be read/);
+  await assert.rejects(() => research(ownerInput, 'test-placeholder'), /None of the competitor websites/);
+  assert.equal(calls.length, 2, 'Neither missing-evidence case should reach the analysis phase.');
+});
+test('API accepts a valid multilingual questionnaire above the former 5 KB limit', async () => {
+  let received;
+  const route = modules({
+    'cloudflare:workers': { env: { ANTHROPIC_API_KEY: 'test-placeholder' } },
+    '@/lib/research': { research: async value => { received = value; return { id: 'multilingual-test' }; } },
+  })('app/api/research/route.ts');
+  const profile = { businessType: '店'.repeat(100), location: '街'.repeat(160), offerings: '物'.repeat(600), customers: '客'.repeat(400), currentApproach: '做'.repeat(600), constraints: '限'.repeat(600) };
+  const body = JSON.stringify({ businessWebsite: OWNER, competitors: [RIVAL], businessName: '店'.repeat(100), goal: '目'.repeat(400), profile });
+  assert.ok(Buffer.byteLength(body, 'utf8') > 5000 && Buffer.byteLength(body, 'utf8') < 20000);
+  const response = await route.POST(new Request('https://nearby.site/api/research', { method: 'POST', headers: { 'content-type': 'application/json' }, body }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(received.profile, profile);
+});
+test('API caps actual UTF-8 request bytes before research even without a length header', async () => {
+  let calls = 0;
+  const route = modules({
+    'cloudflare:workers': { env: { ANTHROPIC_API_KEY: 'test-placeholder' } },
+    '@/lib/research': { research: async () => { calls += 1; return { id: 'should-not-run' }; } },
+  })('app/api/research/route.ts');
+  const body = '界'.repeat(7000);
+  assert.ok(body.length < 20000 && Buffer.byteLength(body, 'utf8') > 20000);
+  const response = await route.POST(new Request('https://nearby.site/api/research', { method: 'POST', headers: { 'content-type': 'application/json' }, body }));
+  assert.equal(response.status, 413);
+  assert.equal(calls, 0);
+});
+
+
+test('sends normalized questionnaire answers only to analysis and keeps them out of fetched evidence', async t => {
+  const model = generated();
+  model.ownerContext = { goal: 'Model replacement', profile: { constraints: 'Unlimited resources' } };
+  const calls = mockFetch(t, [
+    { body: { content: [fetched(), fetched(RIVAL)] } },
+    { body: { content: [{ type: 'text', text: JSON.stringify(model) }] } },
+  ]);
+  const ownerInput = { businessWebsite: OWNER, competitors: [RIVAL], goal: '  More weekday orders  ', profile: { offerings: '  Seasonal pastry boxes  ', currentApproach: '  Already have online ordering  ', constraints: '  Two staff-hours available, no new equipment.  ' } };
+  const expectedProfile = { offerings: 'Seasonal pastry boxes', currentApproach: 'Already have online ordering', constraints: 'Two staff-hours available, no new equipment.' };
+  const report = await research(ownerInput, 'test-placeholder');
+  assert.equal(calls.length, 2);
+  const fetchRequest = JSON.stringify(calls[0].body);
+  for (const value of [ownerInput.goal.trim(), ...Object.values(expectedProfile)]) {
+    assert.ok(!fetchRequest.includes(value), 'Private questionnaire answers must not be sent during website fetching.');
+  }
+  const analysis = JSON.parse(calls[1].body.messages[0].content);
+  assert.equal(analysis.ownerGoal, ownerInput.goal.trim());
+  assert.deepEqual(analysis.ownerProvidedProfile, expectedProfile);
+  assert.deepEqual(analysis.evidence.map(({ id, url, text }) => ({ id, url, text })), [
+    { id: 's1', url: OWNER, text: pageText },
+    { id: 's2', url: RIVAL, text: pageText },
+  ]);
+  assert.deepEqual(report.ownerContext, { goal: ownerInput.goal.trim(), profile: expectedProfile });
+});
+
+test('questionnaire does not make the owner website or competitor list optional', () => {
+  const profile = { businessType: 'Bakery', location: 'Seattle', offerings: 'Bread' };
+  assert.throws(() => parseInput({ competitors: [RIVAL], profile }));
+  assert.throws(() => parseInput({ businessWebsite: OWNER, profile }));
+  assert.throws(() => parseInput({ businessWebsite: OWNER, competitors: [], profile }));
+});
+
+
+test('does not save the default analysis goal as an answer from the owner', async t => {
+  const calls = mockFetch(t, [
+    { body: { content: [fetched(), fetched(RIVAL)] } },
+    { body: { content: [{ type: 'text', text: JSON.stringify(generated()) }] } },
+  ]);
+  const profile = { constraints: 'One hour available each week' };
+  const report = await research({ businessWebsite: OWNER, competitors: [RIVAL], profile }, 'test-placeholder');
+  const analysis = JSON.parse(calls[1].body.messages[0].content);
+  assert.ok(analysis.ownerGoal.length > 0, 'The model may receive a fallback goal for an unanswered question.');
+  assert.deepEqual(report.ownerContext, { goal: '', profile }, 'The saved snapshot must contain only actual submitted answers.');
 });

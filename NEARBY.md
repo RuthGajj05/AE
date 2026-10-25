@@ -5,16 +5,22 @@ A working private prototype for small-business owners: enter your website and on
 ## Try it
 
 1. Start the app locally using the setup instructions below, or open your own private Sites deployment.
-2. Enter independent public HTTPS websites. Direct menu or service pages work too.
-3. Optionally add the business name and a goal, then run research. Allow about 1–3 minutes.
-4. Review the comparison, source links, timestamps, and limitations.
+2. Enter your website and one to three independent competitor websites using public HTTPS addresses. Direct menu or service pages work too.
+3. Optionally add the business name, goal, and short business questionnaire, then run research. Allow about 1–3 minutes.
+4. Review your business brief, the comparison, source links, timestamps, and limitations.
 5. Edit the draft for each recommendation. Copy it or download the report. Confirm placeholders and business facts before publishing anything.
 
 The separately labeled Seattle bakery example is a saved research example. It does not run a fresh scan. Live errors never silently fall back to that example.
 
+## Optional business questionnaire
+
+Owners can describe their business type and location, products or services, target customers, existing offers or marketing, and constraints such as time, budget, or capacity. The goal field explains what they want to improve. Every questionnaire answer is optional; the business website and at least one competitor website are still required.
+
+Form inputs save in this browser before research runs. The report keeps a snapshot of the submitted answers, labeled as owner-provided information rather than independently verified website evidence. That brief is included in the Markdown export. Recommendations use these answers to account for the owner's constraints and avoid proposing work already in place.
+
 ## How live research works
 
-The server calls Claude Sonnet 5.5 with Anthropic's web-fetch tool, restricted to the supplied business domains and eight fetches. It collects actual successful text results, including the source URL and retrieval time. A second Claude call produces structured recommendations using only that collected evidence. The server validates the result and rejects unknown source IDs and mixed business attribution. Displayed excerpts are checked against the retrieved text; invalid model-proposed excerpts are replaced by an actual page excerpt.
+The server calls Claude Sonnet 5.5 with Anthropic's web-fetch tool, restricted to the supplied business domains and eight fetches. It collects actual successful text results, including the source URL and retrieval time. A second Claude call produces structured recommendations using those pages and the owner-provided business brief, while keeping the two kinds of information distinct. The server validates the result and rejects unknown source IDs and mixed business attribution. Displayed excerpts are checked against the retrieved text; invalid model-proposed excerpts are replaced by an actual page excerpt.
 
 The app requires readable evidence for the owner's business and at least one competitor. If other sites cannot be read, the report labels the comparison as partial. Web-fetch may serve cached content. A source being retrieved is not a guarantee that every model interpretation is correct; owners can inspect the linked originals.
 
@@ -22,8 +28,8 @@ The app requires readable evidence for the owner's business and at least one com
 
 - The original prototype runs on an owner-private Site. Its shared API relies on Sites authentication and access control. This source export does not include that deployment identity. Keep your deployment private, or add server-side authentication and per-user quotas before exposing `/api/research`. Multi-customer access also requires tenant storage.
 - The Claude key is a server-side Sites secret named `ANTHROPIC_API_KEY`. It is never sent to the browser or placed in source control.
-- Submitted URLs, the optional name and goal, and retrieved public website text are sent to Anthropic for the requested research. Do not enter confidential customer information.
-- Reports and edited drafts are stored in this browser's local storage. They are not synchronized between devices. Clearing browser data removes them.
+- URLs, the optional name, goal and questionnaire answers, and retrieved public website text are sent to Anthropic when the owner submits a research request. Typing or saving answers locally does not send them to Claude. Do not enter customer personal data or confidential customer information.
+- Form inputs, reports, and edited drafts are stored in this browser's local storage. They are not synchronized between devices. Clearing browser data removes them.
 - Nothing is emailed, posted, or changed on a business website automatically.
 - Research has a 210-second server deadline and bounded fetch/output budgets. The prototype limits overlapping/repeated requests per running server instance. It does not yet provide a durable account-wide quota or billing system.
 

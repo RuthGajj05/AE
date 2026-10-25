@@ -24,16 +24,30 @@ export function belongsTo(url: string, website: string) {
   try { const host = domainOf(url); const root = domainOf(website); return host === root || host.endsWith(`.${root}`); } catch { return false; }
 }
 
+export const profileSchema = z.object({
+  businessType: z.string().trim().max(100).optional(),
+  location: z.string().trim().max(160).optional(),
+  offerings: z.string().trim().max(600).optional(),
+  customers: z.string().trim().max(400).optional(),
+  currentApproach: z.string().trim().max(600).optional(),
+  constraints: z.string().trim().max(600).optional(),
+}).strict();
+
 export const inputSchema = z.object({
   businessWebsite: z.string().min(1).max(250),
   competitors: z.array(z.string().min(1).max(250)).min(1).max(3),
-  businessName: z.string().max(100).optional().default(''),
-  goal: z.string().max(400).optional().default('Find practical ways to improve my website and attract customers.'),
+  businessName: z.string().trim().max(100).optional().default(''),
+  goal: z.string().trim().max(400).optional().default(''),
+  profile: profileSchema.optional().default({}),
 }).strict();
 export function parseInput(raw: unknown) {
   const result = inputSchema.safeParse(raw);
-  if (!result.success) throw new ResearchError('Add your website and one to three competitor websites. Keep the goal under 400 characters.');
-  const input = { ...result.data, businessWebsite: normalizeWebsite(result.data.businessWebsite), competitors: result.data.competitors.map(normalizeWebsite) };
+  if (!result.success) {
+    if (result.error.issues.some(issue => issue.path[0] === 'profile')) throw new ResearchError('Check your business questionnaire. Use text within each question’s character limit.');
+    throw new ResearchError('Add your website and one to three competitor websites. Keep the goal under 400 characters.');
+  }
+  const profile = Object.fromEntries(Object.entries(result.data.profile).filter(([, value]) => Boolean(value)));
+  const input = { ...result.data, profile, businessWebsite: normalizeWebsite(result.data.businessWebsite), competitors: result.data.competitors.map(normalizeWebsite) };
   const domains = [input.businessWebsite, ...input.competitors].map(domainOf);
   if (new Set(domains).size !== domains.length) throw new ResearchError('Use a different website for your business and each competitor.');
   if (domains.some((host, i) => domains.some((other, j) => i !== j && host.endsWith(`.${other}`)))) {

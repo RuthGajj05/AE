@@ -5,6 +5,7 @@ import { parseInput, ResearchError } from '@/lib/validation';
 export const dynamic = 'force-dynamic';
 let active = false;
 let lastStarted = 0;
+const MAX_REQUEST_BYTES = 20000;
 
 export async function POST(request: Request) {
   // This shared, owner-private prototype relies on Sites dispatch for browser and
@@ -14,9 +15,9 @@ export async function POST(request: Request) {
   if (!request.headers.get('content-type')?.includes('application/json')) return Response.json({ error: 'Send a JSON research request.' }, { status: 415 });
   const key = env.ANTHROPIC_API_KEY;
   if (!key) return Response.json({ error: 'Live research is not connected yet. The site owner needs to configure the Claude API credential.' }, { status: 503 });
-  if (Number(request.headers.get('content-length')) > 5000) return Response.json({ error: 'The research request is too large.' }, { status: 413 });
+  if (Number(request.headers.get('content-length')) > MAX_REQUEST_BYTES) return Response.json({ error: 'The research request is too large.' }, { status: 413 });
   const raw = await request.text();
-  if (raw.length > 5000) return Response.json({ error: 'The research request is too large.' }, { status: 413 });
+  if (new TextEncoder().encode(raw).byteLength > MAX_REQUEST_BYTES) return Response.json({ error: 'The research request is too large.' }, { status: 413 });
   let input: unknown;
   try { input = JSON.parse(raw); } catch { return Response.json({ error: 'The request could not be read. Please try again.' }, { status: 400 }); }
   try { input = parseInput(input); } catch (error) { return Response.json({ error: error instanceof ResearchError ? error.message : 'Check the website addresses and try again.' }, { status: 400 }); }
