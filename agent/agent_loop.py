@@ -5,14 +5,21 @@ turn's tool calls one at a time; here they all run at once.
 """
 
 import json
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 
 import anthropic
 
 MODEL = "claude-opus-5-5"
 MAX_TURNS = 40
+
+
+def configured_model() -> str:
+    """Read after dotenv initialization; callers may configure each run."""
+    return os.environ.get("ANTHROPIC_MODEL") or MODEL
 
 
 def _run_tool(tools_by_name: dict, call) -> dict:
@@ -25,8 +32,18 @@ def _run_tool(tools_by_name: dict, call) -> dict:
         return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {e}", "is_error": True}
 
 
-def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) -> dict:
+def validate_max_workers(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 10:
+        raise ValueError("max_workers must be an integer between 1 and 10")
+    return value
+
+
+def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *, max_workers: int = 4,
+              max_turns: int = MAX_TURNS) -> dict:
     """Run the agent and return the input of its successful `submit_tool` call."""
+    validate_max_workers(max_workers)
+    if isinstance(max_turns, bool) or not isinstance(max_turns, int) or not 1 <= max_turns <= MAX_TURNS:
+        raise ValueError(f"max_turns must be an integer between 1 and {MAX_TURNS}")
     client = anthropic.Anthropic()
     tools_by_name = {t.name: t for t in tools}
     messages = [{"role": "user", "content": prompt}]
@@ -35,11 +52,11 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) ->
     def log(msg: str) -> None:
         print(f"[{label}] {msg}", file=sys.stderr)
 
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        for _ in range(MAX_TURNS):
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        for _ in range(max_turns):
             t0 = time.monotonic()
             response = client.beta.messages.create(
-                model=MODEL,
+                model=configured_model(),
                 max_tokens=16000,
                 system=system,
                 tools=[t.to_dict() for t in tools],
@@ -59,15 +76,37 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str) ->
             for c in calls:
                 log(f"-> {c.name}: {json.dumps(c.input)[:110]}")
             t0 = time.monotonic()
-            results = list(pool.map(lambda c: _run_tool(tools_by_name, c), calls))
+            # Every worker needs its own copied Context. Session objects inside
+            # that context remain shared within this run, but never between runs.
+            # A submission can cite retrievals from the same model response, so
+            # finish all retrievals before validating any submission.
+            results = [None] * len(calls)
+            pending = {
+                index: pool.submit(copy_context().run, _run_tool, tools_by_name, call)
+                for index, call in enumerate(calls) if call.name != submit_tool.name
+            }
+            for index, future in pending.items():
+                results[index] = future.result()
+            successful_submission = None
+            for index, call in enumerate(calls):
+                if call.name != submit_tool.name:
+                    continue
+                if successful_submission is not None:
+                    results[index] = {
+                        "type": "tool_result", "tool_use_id": call.id,
+                        "content": "A report has already been submitted in this turn.", "is_error": True,
+                    }
+                    continue
+                results[index] = _run_tool(tools_by_name, call)
+                if not results[index].get("is_error"):
+                    successful_submission = index
             log(f"   model {model_secs:.0f}s, {len(calls)} tool call(s) {time.monotonic() - t0:.0f}s")
             messages.append({"role": "user", "content": results})
 
-            for c, r in zip(calls, results):
-                if c.name == submit_tool.name and not r.get("is_error"):
-                    log(f"done in {time.monotonic() - start:.0f}s")
-                    return dict(c.input)
+            if successful_submission is not None:
+                log(f"done in {time.monotonic() - start:.0f}s")
+                return dict(calls[successful_submission].input)
         else:
-            raise RuntimeError(f"{label}: did not finish within {MAX_TURNS} turns")
+            raise RuntimeError(f"{label}: did not finish within {max_turns} turns")
 
     raise RuntimeError(f"{label}: finished without calling {submit_tool.name}")

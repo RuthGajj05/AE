@@ -1,0 +1,377 @@
+{
+  "menu_observations": [
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "product": "Pistachio croissant",
+      "source_url": "https://example.com/synthetic-harbor/menu",
+      "observed_at": "2026-10-24",
+      "price": "$6.00 (synthetic)"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "product": "Matcha latte",
+      "source_url": "https://example.com/synthetic-harbor/menu",
+      "observed_at": "2026-10-24",
+      "price": "$5.00 (synthetic)"
+    }
+  ],
+  "review_observations": [
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-01",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant was flaky and enjoyable.",
+      "published_at": "2026-09-05",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-previous-01",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-02",
+      "text": "[SYNTHETIC DEMO REVIEW] I liked the pistachio croissant with its nutty filling.",
+      "published_at": "2026-09-06",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-previous-02",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-03",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant was my favorite part of this visit.",
+      "published_at": "2026-09-07",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-previous-03",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-04",
+      "text": "[SYNTHETIC DEMO REVIEW] The staff welcomed me warmly.",
+      "published_at": "2026-09-08",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-04",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-05",
+      "text": "[SYNTHETIC DEMO REVIEW] The seating area was clean and comfortable.",
+      "published_at": "2026-09-09",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-05",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-06",
+      "text": "[SYNTHETIC DEMO REVIEW] Service was friendly during my visit.",
+      "published_at": "2026-09-10",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-06",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-07",
+      "text": "[SYNTHETIC DEMO REVIEW] I liked the quiet atmosphere.",
+      "published_at": "2026-09-11",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-07",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-08",
+      "text": "[SYNTHETIC DEMO REVIEW] The counter team answered my questions clearly.",
+      "published_at": "2026-09-12",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-08",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-09",
+      "text": "[SYNTHETIC DEMO REVIEW] It was easy to find a seat.",
+      "published_at": "2026-09-13",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-09",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-10",
+      "text": "[SYNTHETIC DEMO REVIEW] The space felt bright and welcoming.",
+      "published_at": "2026-09-14",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-10",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-11",
+      "text": "[SYNTHETIC DEMO REVIEW] My visit was relaxed and the service was prompt.",
+      "published_at": "2026-09-15",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-11",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/previous-12",
+      "text": "[SYNTHETIC DEMO REVIEW] I appreciated the tidy tables.",
+      "published_at": "2026-09-16",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-previous-12",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-01",
+      "text": "[SYNTHETIC DEMO REVIEW] I loved the pistachio croissant on this visit.",
+      "published_at": "2026-10-05",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-01",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-02",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant had a lovely crisp texture.",
+      "published_at": "2026-10-06",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-02",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-03",
+      "text": "[SYNTHETIC DEMO REVIEW] I enjoyed the pistachio croissant and its generous filling.",
+      "published_at": "2026-10-07",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-03",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-04",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant tasted fresh and delicious.",
+      "published_at": "2026-10-08",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-04",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-05",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant was excellent with breakfast.",
+      "published_at": "2026-10-09",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-05",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-06",
+      "text": "[SYNTHETIC DEMO REVIEW] I was pleased with the rich flavor of the pistachio croissant.",
+      "published_at": "2026-10-10",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-06",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-07",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant was a tasty afternoon treat.",
+      "published_at": "2026-10-11",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-07",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-08",
+      "text": "[SYNTHETIC DEMO REVIEW] I especially liked the flaky pistachio croissant.",
+      "published_at": "2026-10-12",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-08",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-09",
+      "text": "[SYNTHETIC DEMO REVIEW] The pistachio croissant was delicious and worth trying.",
+      "published_at": "2026-10-13",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-09",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-10",
+      "text": "[SYNTHETIC DEMO REVIEW] The staff welcomed me warmly.",
+      "published_at": "2026-10-14",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-current-10",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-11",
+      "text": "[SYNTHETIC DEMO REVIEW] The seating area was clean and comfortable.",
+      "published_at": "2026-10-15",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-current-11",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-12",
+      "text": "[SYNTHETIC DEMO REVIEW] Service was friendly during my visit.",
+      "published_at": "2026-10-16",
+      "source_kind": "review_text",
+      "mentions": [],
+      "review_id": "synthetic-current-12",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/reviews/current-01",
+      "text": "[SYNTHETIC DEMO REVIEW] I loved the pistachio croissant on this visit.",
+      "published_at": "2026-10-05",
+      "source_kind": "review_text",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "review_id": "synthetic-current-01",
+      "observed_at": "2026-10-25"
+    },
+    {
+      "business_name": "Synthetic Harbor Bakery",
+      "address": "20 Demo Lane (fictional), Queen Anne, Seattle",
+      "source_url": "https://example.com/synthetic-harbor/search-summary",
+      "text": "[SYNTHETIC SEARCH SNIPPET] Customers enjoy the pistachio croissant. Listing displays 233 reviews; this is not 233 collected review texts.",
+      "published_at": "2026-10-20",
+      "source_kind": "search_snippet",
+      "mentions": [
+        {
+          "product": "Pistachio croissant",
+          "sentiment": "positive"
+        }
+      ],
+      "observed_at": "2026-10-25"
+    }
+  ]
+}

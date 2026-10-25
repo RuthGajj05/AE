@@ -3,5 +3,7 @@
 __pycache__/
 reports/
 .cache/
+.pytest_cache/
+*.py[cod]
 private/
 state/

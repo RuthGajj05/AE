@@ -1,0 +1,9 @@
+{
+  "products": [
+    "Butter croissant",
+    "Chocolate croissant",
+    "Coffee"
+  ],
+  "confirmed_complete": false,
+  "confirmed_at": null
+}

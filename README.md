@@ -1,10 +1,10 @@
 # AE
 
-Tailored advice for small, brick-and-mortar businesses. Given a business, its location and its sales data, it researches nearby competitors and the business's own online presence in parallel, then writes recommendations specific to what that business lacks or could change, with estimated dollar impact.
+Python research and advice for small, brick-and-mortar businesses. The pipeline discovers competitors, then runs independent agents for different source websites while researching the owner's online presence and computing sales statistics. Product analysis adds menu-gap checks and dated review comparisons before recommendations are written.
 
 ```mermaid
 flowchart LR
-  IN["Owner input<br/>name · type · location"]
+  IN["Owner input<br/>name · type · location · optional menu"]
   SRC{"Sales source"}
   CSV["CSV export"]
   SQ["Square API"]
@@ -12,91 +12,114 @@ flowchart LR
 
   subgraph PAR["Run at the same time"]
     direction TB
-    subgraph C["Competitor agent · ~80s"]
+    subgraph C["Competitor research"]
       direction TB
-      OSM["OpenStreetMap<br/>nearby shops, hours (cached)"]
-      DISC["Web search<br/>well-known shops"]
-      REV["Web search by address<br/>ratings, review snippets"]
-      PRICE["Read menus and sites<br/>prices"]
-      GP["Google Places<br/>(only if a key is set)"]
-      OSM --> DISC --> REV --> PRICE
-      GP -.-> REV
+      DISC["Bounded discovery<br/>nearby branches and official websites"]
+      subgraph SPECIALISTS["Independent source agents · default 3 concurrent"]
+        OFF["Official menus"]
+        ORD["Public ordering prices"]
+        YELP["Yelp search snippets"]
+        TRIP["TripAdvisor search snippets"]
+        GOOGLE["Google listings / Places sample"]
+      end
+      MERGE["Wait for results<br/>deterministic factual merge"]
+      DISC --> OFF & ORD & YELP & TRIP & GOOGLE
+      OFF & ORD & YELP & TRIP & GOOGLE --> MERGE
     end
-    subgraph B["Your business agent · ~15s"]
-      PRES["Your own listings,<br/>reviews, menu, hours"]
-    end
-    subgraph S["Sales analysis · under 1s"]
-      direction TB
-      ROWS["Same rows for every source"]
-      MET["Revenue by item, day, hour<br/>closed days, sell-outs"]
+    PRES["Your own listings,<br/>reviews, menu, hours"]
+    subgraph SALES["Sales analysis"]
+      ROWS["Same item-level rows for every source"]
+      MET["Revenue by item, day, hour<br/>transaction patterns to validate"]
       ROWS --> MET
     end
   end
 
-  ADV["Advisor · ~70s<br/>tailored recommendations<br/>with $ estimates"]
-  OUT["reports/…-advisor.json"]
+  MI["Deterministic product analysis<br/>menu gaps · dated review trends"]
+  ADV["Advisor<br/>tailored actions<br/>labeled financial scenarios"]
+  OUT["Unique JSON reports<br/>under reports/"]
 
-  IN --> C
-  IN --> B
+  IN --> DISC
+  IN --> PRES
   IN --> SRC
+  IN -.->|Owner menu| MI
   SRC --> CSV --> ROWS
   SRC --> SQ --> ROWS
   SRC --> TS --> ROWS
-  C --> ADV
-  B --> ADV
+  MERGE --> MI
+  MET --> MI
+  MI --> ADV
+  PRES --> ADV
   MET --> ADV
   ADV --> OUT
 ```
+
+This repository provides Python functions, command-line tools, and JSON reports for your team's application. It does not implement a frontend or HTTP API. See [the backend integration contract](docs/backend-integration.md) for imports, report fields, and replaying evidence.
 
 ## Setup
 
 ```sh
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+cp .env.example .env
 ```
 
-Put your keys in a `.env` file at the repo root (it's gitignored):
+Set `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` in `.env` for live research. Signing in to Tavily MCP in Codex does not supply this application's API key. `ANTHROPIC_MODEL` can override the existing `claude-opus-5-5` default; use a model available to your account.
 
-```
-ANTHROPIC_API_KEY=sk-ant-...
-TAVILY_API_KEY=tvly-...
-GOOGLE_PLACES_API_KEY=...
-```
+`GOOGLE_PLACES_API_KEY` is optional and paid. Without it, OpenStreetMap supplies discovery and Tavily searches accessible web sources. To configure Google, enable billing and **Places API (New)** in the [Google Cloud console](https://console.cloud.google.com/), then create a key restricted to that API. Google Places reviews are a small selected sample, not a complete chronological review feed.
 
-`GOOGLE_PLACES_API_KEY` is optional and paid. Without it, the agent finds competitors with OpenStreetMap (free, no key) and gets ratings and reviews from web search. To get a Google key: in the [Google Cloud console](https://console.cloud.google.com/), create a project, enable billing and **Places API (New)**, then create an API key under APIs & Services → Credentials. Restrict the key to Places API (New).
+## Run the advisor
 
-## Run
-
-Full pipeline (about 2.5 minutes):
+The original full-pipeline command is retained:
 
 ```sh
 .venv/bin/python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv
 ```
 
-`--sales` takes a Square "Items" sales export (CSV with Date, Time, Category, Item, Qty, Gross Sales). `data/sample_sales.csv` is **fake** data for a fictional bakery, made by `scripts/make_sample_sales.py`.
+`--sales` accepts a Square Items export with `Date`, `Time`, `Item`, `Qty`, and `Gross Sales` columns; `Category` is optional. `data/sample_sales.csv` is **synthetic data for a fictional bakery**, generated by `scripts/make_sample_sales.py` and automatically labeled synthetic. Use `--synthetic-sales` for other demonstration CSV files. Its recommendations and dollar scenarios must not be presented as results from a real business.
 
-The report is saved to `reports/<business>-<date>-advisor.json`. Progress and timings print as it runs.
+The advisor combines sales, online presence, competitor facts, and deterministic product analysis. Products found in sales are known offerings, but the sales export is not assumed to be the complete current menu. Use `--owner-menu` with an owner-confirmed menu to establish missing products. Each advisor report is saved with a unique filename under `reports/`; the command prints the output path. Repeated runs do not overwrite the previous advisor report.
 
-### Pulling sales straight from Square or Toast
-
-Instead of a CSV, pass `--sales square` or `--sales toast` (and optionally `--days 56`) to pull item-level sales from the POS API. Add the credentials to `.env`:
-
+```sh
+.venv/bin/python agent/advisor.py "Moonrise Bakery" bakery "Queen Anne, Seattle" \
+  --sales /path/to/your-sales.csv \
+  --owner-menu examples/moonrise-owner-menu.example.json
 ```
-# Square: create an app at developer.squareup.com. The sandbox token works with Square's test data.
-SQUARE_ACCESS_TOKEN=...
-SQUARE_ENVIRONMENT=sandbox        # or production
-SQUARE_LOCATION_ID=...            # optional; defaults to the first location
 
-# Toast: a restaurant admin creates "Standard API access" credentials in Toast Web
-# (Integrations → Toast API access → Manage credentials) with read access to orders.
+The Moonrise menu file is an **unverified template**. Replace its indicative products with the owner's list. Set `confirmed_complete` to `true` and `confirmed_at` to the confirmation date only when the owner confirms completeness.
+
+The advisor also accepts `--website`, `--strategy multi|single`, `--max-agents`, `--max-workers`, `--reports-dir`, and `--no-history`. It saves a separate competitor snapshot for future history and retains the original sales, presence, competitor, and advice sections in the final report.
+
+### Pull sales from Square or Toast
+
+Instead of a CSV, pass `--sales square` or `--sales toast`. `--days 56` sets the lookback period for POS sales; the default is 56 days. Both APIs produce the same item-level row format used by CSV analysis, including fractional quantities.
+
+```sh
+.venv/bin/python agent/advisor.py "My Cafe" cafe "Ballard, Seattle" --sales square --days 56
+.venv/bin/python agent/advisor.py "My Cafe" cafe "Ballard, Seattle" --sales toast --days 56
+```
+
+Add the corresponding credentials to `.env`:
+
+```dotenv
+# Square: create an app at developer.squareup.com.
+SQUARE_ACCESS_TOKEN=...
+SQUARE_ENVIRONMENT=sandbox
+# Choose production only for a production account/token.
+SQUARE_LOCATION_ID=...
+# Optional; without it the integration uses the account's first location.
+
+# Toast: a restaurant admin creates Standard API access credentials in Toast Web
+# (Integrations → Toast API access → Manage credentials), with read access to orders.
 TOAST_CLIENT_ID=...
 TOAST_CLIENT_SECRET=...
 TOAST_RESTAURANT_GUID=...
+# Optional; defaults to the production API host.
+# TOAST_API_HOST=https://ws-api.toasttab.com
 ```
 
-The Toast integration is written from Toast's docs and hasn't been tested against a live account yet. Keep any real owner's sales data out of the repo (e.g. in `private/`, which is gitignored).
+Square sandbox sales are automatically labeled synthetic. Use `--synthetic-sales` for other test feeds. The Toast integration has not been tested against a live account. Keep real owners' sales files out of Git; `private/` is gitignored.
 
-### Monitoring: alert the owner when something changes
+## Monitoring: alert the owner when something changes
 
 ```sh
 .venv/bin/python agent/monitor.py "Sea Wolf Bakers" bakery "Fremont, Seattle" --sms +12065550123
@@ -104,7 +127,7 @@ The Toast integration is written from Toast's docs and hasn't been tested agains
 
 The first run saves a baseline of the competitors. Each later run re-checks the same competitors (plus a search for new openings and closures), compares with the last snapshot, and if anything material changed (a new shop, a closure, a price change, new hours) prints a short message, appends it to `state/<business>/notifications.log`, and texts it to `--sms` if Twilio is configured (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` in `.env`). Run it on a schedule, e.g. Monday, Wednesday and Friday mornings.
 
-### Supabase (for the app)
+## Supabase (for the app)
 
 The schema is in [`supabase/migrations/`](supabase/migrations/). Apply it in the Supabase SQL editor (or with `supabase db push`). Tables:
 
@@ -134,27 +157,83 @@ Then schedule:
 .venv/bin/python agent/monitor.py --deliver   # hourly: send texts/emails at each owner's notify hour
 ```
 
-Each check adds the alert to the in-app feed right away and queues a text/email for the owner's `notify_hour` (default 2pm local).
+Each check adds the alert to the in-app feed right away and queues a text/email for the owner's `notify_hour` (default 2pm local). The baseline uses the default multi-agent research; repeat checks re-research the same tracked competitors with the single-agent collector, which is the one that accepts a fixed list.
 
-Competitor research only:
+## Run competitor and product research
 
 ```sh
-.venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle"
+.venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle" \
+  --strategy multi --max-agents 3 --max-workers 4
 ```
 
-## Example
+For product comparisons, add `--owner-menu path/to/menu.json`. Other controls are `--window-days 30`, `--min-reviews 10`, `--as-of YYYY-MM-DD`, `--reports-dir reports`, and `--no-history`.
 
-[`examples/capitol-hill-bakery-advisor.json`](examples/capitol-hill-bakery-advisor.json): full advisor report for the fictional "Test Bakery" on Capitol Hill, using the fake sample sales.
+Historical `--as-of` dates are supported only with offline `--evidence`; live pages are observed today. Worker counts are 1–10 and comparison windows are 1–365 days.
+
+The collector reports competitor facts and source observations. The analysis layer calculates potential product gaps and review trends; the advisor owns tailored recommendations and any explicitly labeled financial scenarios. Collection runs only when invoked; recurring checks are handled by the monitor (see Monitoring above).
+
+### Independent website specialists
+
+The default `multi` strategy first targets up to eight nearby branches in discovery. It then gives the same verified branch identities to five separate Claude conversations, each with its own tool state, source ledger, domain restrictions, and retrieval budget:
+
+| Agent | Assigned sources and task |
+|---|---|
+| `official_menus` | Discovered official websites: listed products, prices, and hours. Skipped if no official domains were verified. |
+| `ordering_prices` | Public Square, Toast, and Clover ordering pages: products and online-ordering prices, labeled separately from in-store prices. |
+| `yelp_reviews` | Indexed Yelp listings and search snippets only. No direct page extraction or claim to full collected reviews. |
+| `tripadvisor_reviews` | Indexed TripAdvisor listings and search snippets only, with the same limitation. |
+| `google_reviews` | Exact Google listings; selected Places review samples if a key is configured, otherwise indexed Google snippets. |
+
+`--max-agents` limits simultaneous competitor specialists (1–6, default 3). The five specialists are queued when the cap is smaller than five. `--max-workers` separately limits concurrent tool calls **inside each agent** (1–10, default 4). The advisor's own-presence and sales stages remain independently parallel, so neither option is a global process-wide request cap. `--strategy single` keeps the original one-conversation competitor collector.
+
+Once specialists finish, Python merges validated facts in a fixed order. Conflicting ratings and other scalar facts stay unknown; prices are retained as source-specific claims, not averaged. `agent_runs` records statuses, elapsed time, and observation counts, while `source_reports` preserves attribution. A failed or skipped source produces a `partial` collection with caveats; other successful sources remain usable. Discovery failure or failure of every scheduled specialist raises an error. These limits bound work; no live speedup is assumed.
+
+## Try product analysis without API keys
+
+```sh
+.venv/bin/python agent/competitor_agent.py "Demo Bakery" bakery "Queen Anne, Seattle" \
+  --evidence examples/product-opportunity-demo.json \
+  --owner-menu examples/demo-owner-menu.json \
+  --as-of 2026-10-25 --window-days 30 --min-reviews 10 \
+  --reports-dir reports/demo --no-history
+```
+
+This offline path makes no API calls, including to Claude. Dependencies still need to be installed. All businesses, addresses, feedback, prices, and URLs in these two demo files are **synthetic**. The `example.com` links are placeholders and are not fetched.
+
+The fixture contains 12 dated review texts in each comparison period, with positive pistachio-croissant mentions rising from 3/12 to 9/12. It also includes a duplicate and a search snippet to exercise filtering. This illustrates a change in the collected sample, not sales growth or profit. `--evidence` accepts a raw evidence bundle; replaying a complete report is described in [the integration contract](docs/backend-integration.md#replay-an-exported-report).
+
+## How to interpret the results
+
+- A menu listing proves only that the product appeared in the retrieved evidence. It does not prove availability, sales volume, or profitability.
+- A missing product is confirmed only against a complete, recently confirmed owner menu. Otherwise it remains a candidate requiring owner confirmation.
+- Review trends use deduplicated, dated review texts from matching business/address/source groups in two adjacent windows. Standardized shares hold those groups' weights fixed. The default requires at least 10 eligible reviews and 3 reviews with a positive product mention or request per period.
+- Search snippets, editorial summaries, and selected Google Places reviews do not qualify for temporal trends. A displayed “233 reviews” count is not 233 collected records. Relative dates such as “two weeks ago” are not substituted with collection dates.
+- History is scoped by business name, location, and collection mode. Imported evidence is kept separate from live collection. Repeated observations are deduplicated; saving a report again does not create growth.
+- Collection coverage may be incomplete and unrepresentative. Source URLs, branch identity, dates, and text are retained; automated classification still needs review. Import only feedback you have permission to process.
+- Review mentions do not establish sales or financial impact. Advisor estimates must remain labeled scenarios grounded in the owner's data and assumptions. Transaction timing alone does not prove stockouts or operating hours; validate those with the owner.
+
+## Tests
+
+The Python tests run without live service credentials:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -v
+```
 
 ## Files
 
-- `agent/advisor.py`: runs the three parts in parallel and writes the tailored recommendations
-- `agent/competitor_agent.py`: competitor research agent and its tools (OpenStreetMap, Tavily, optional Google Places)
-- `agent/business_agent.py`: sales-data analysis and the agent that researches the business's own online presence
-- `agent/pos.py`: pulls item-level sales from the Square and Toast APIs
-- `agent/monitor.py`: re-checks competitors on a schedule and notifies the owner of changes (local files or Supabase)
-- `agent/supabase_store.py`: reads and writes the Supabase tables
-- `supabase/migrations/`: the database schema and access rules
-- `agent/agent_loop.py`: shared agent loop that runs each turn's tool calls in parallel
-- `agent/sources.py`: which sites web search uses for listings and reviews
-- `scripts/make_sample_sales.py`: generates the fake sample sales data
+- `agent/advisor.py`: coordinates competitor research, online presence, sales, and tailored advice.
+- `agent/competitor_agent.py`: facts-only collector, analyzed `research(...)` entry point, and CLI.
+- `agent/business_agent.py`: sales calculations and the owner's online-presence research.
+- `agent/pos.py`: Square and Toast item-level sales retrieval.
+- `agent/source_agents.py`: discovery, independent website specialists, source budgets, and deterministic merging.
+- `agent/agent_loop.py`: shared loop with bounded tool context and parallel retrieval.
+- `agent/market_intelligence.py`: deterministic menu-gap and review-trend analysis.
+- `agent/evidence_store.py`: retrieved-source validation, scoped history, and report persistence.
+- `agent/monitor.py`: re-checks competitors on a schedule and notifies the owner of changes (local files or Supabase).
+- `agent/supabase_store.py`: reads and writes the Supabase tables.
+- `supabase/migrations/`: the database schema and access rules.
+- `agent/sources.py`: listing/review source configuration.
+- `scripts/make_sample_sales.py`: generates synthetic sales data.
+- `scripts/run_monitor.sh`: cron wrapper for the monitor.
+- `examples/capitol-hill-bakery-advisor.json`: legacy advisor output for fictional Test Bakery using synthetic sales; not a dated review dataset for trend analysis.
