@@ -6,6 +6,7 @@ recommendations specific to what this business lacks or could change.
 Usage:
     python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv
     python agent/advisor.py "My Cafe" cafe "Ballard, Seattle" --sales square
+    python agent/advisor.py --business-id UUID --sales square   # business from Supabase; report saved there too
 """
 
 import argparse
@@ -177,11 +178,31 @@ def run(
     }
 
 
+def run_for_business(business_id: str, sales_source: str, *, store=None, **kwargs) -> tuple[dict, str]:
+    """Run the advisor for a business stored in Supabase and save the report to
+    its advisor_reports, so the owner can look back on it in the app.
+    Returns the report and the new advisor_reports row id."""
+    if store is None:
+        if __package__:
+            from .supabase_store import SupabaseStore
+        else:
+            from supabase_store import SupabaseStore
+        store = SupabaseStore()
+    business = store.get_business(business_id)
+    kwargs.setdefault("website", business.get("website"))
+    report = run(business["name"], business["business_type"], business["location"], sales_source, **kwargs)
+    return report, store.save_advisor_report(business, report)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("business", help="Business name")
-    parser.add_argument("business_type", help="e.g. bakery, dog groomer, cafe")
-    parser.add_argument("location", help="Neighborhood and city, e.g. 'Ballard, Seattle'")
+    parser.add_argument("business", nargs="?", help="Business name (omit with --business-id)")
+    parser.add_argument("business_type", nargs="?", help="e.g. bakery, dog groomer, cafe")
+    parser.add_argument("location", nargs="?", help="Neighborhood and city, e.g. 'Ballard, Seattle'")
+    parser.add_argument(
+        "--business-id",
+        help="A business stored in Supabase: use its name, type, location and website, and save the report to its advisor_reports",
+    )
     parser.add_argument(
         "--sales", required=True,
         help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export",
@@ -194,13 +215,21 @@ def main() -> None:
     parser.add_argument("--no-history", action="store_true", help="Analyze only this run's evidence")
     parser.add_argument("--synthetic-sales", action="store_true", help="Label the supplied CSV as demonstration data")
     args = parser.parse_args()
+    if not args.business_id and not (args.business and args.business_type and args.location):
+        parser.error("give a business, type and location, or --business-id")
 
     owner_menu = OwnerMenu.model_validate_json(args.owner_menu.read_text()) if args.owner_menu else None
-    report = run(
-        args.business, args.business_type, args.location, args.sales, args.website, args.days,
-        owner_menu=owner_menu, max_workers=args.max_workers, reports_dir=args.reports_dir,
+    options = dict(
+        days=args.days, owner_menu=owner_menu, max_workers=args.max_workers, reports_dir=args.reports_dir,
         use_history=not args.no_history, synthetic_sales=args.synthetic_sales,
     )
+    row_id = None
+    if args.business_id:
+        if args.website:
+            options["website"] = args.website
+        report, row_id = run_for_business(args.business_id, args.sales, **options)
+    else:
+        report = run(args.business, args.business_type, args.location, args.sales, args.website, **options)
 
     out = competitor_agent.save_report(report, args.reports_dir)
 
@@ -210,6 +239,8 @@ def main() -> None:
         impact = f"~${r['est_monthly_impact_usd']:,.0f}/mo" if r["est_monthly_impact_usd"] else "impact n/a"
         print(f"- [{r['category']}] {r['title']} ({impact}, {r['confidence']} confidence)")
     print(f"\nSaved to {out}")
+    if row_id:
+        print(f"Saved to Supabase advisor_reports (id {row_id})")
 
 
 if __name__ == "__main__":
