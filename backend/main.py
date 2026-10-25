@@ -1,5 +1,7 @@
+import config  # first: loads backend/.env before anything reads a key
 import os
 import uuid
+from contextlib import asynccontextmanager
 from typing import Dict
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -12,16 +14,32 @@ from analyzer import analyze
 from demo_data import demo_report
 from recommender import RecommendationsRequest, recommend, demo_tips
 
-app = FastAPI(title="Local Business Intel API")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+import demo
+import store
+from crumbs_api import router as crumbs_router
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    store.init()
+    demo.seed()  # the demo business and its flagged sample picks
+    yield
+
+
+app = FastAPI(title="Local Business Intel API", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=config.FRONTEND_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.include_router(crumbs_router)
 
 RESULTS: Dict[str, AnalyzeResponse] = {}  # in-memory; fine for a one-day hackathon
 
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "demo_mode": os.getenv("DEMO_MODE") == "1",
-            "has_key": bool(os.getenv("ANTHROPIC_API_KEY"))}
+    # Which keys are set (never their values) and what's in the 24h cache.
+    return {"ok": True, "demo_mode": config.demo_mode(), "has_key": config.has_key("ANTHROPIC_API_KEY"),
+            "keys": {name: config.has_key(name) for name in config.KEY_NAMES},
+            "squareEnvironment": os.getenv("SQUARE_ENVIRONMENT") or None,
+            "scoringModel": config.SCORING_MODEL, "cache": store.cache_stats()}
 
 
 @app.post("/api/analyze", response_model=AnalyzeResponse)

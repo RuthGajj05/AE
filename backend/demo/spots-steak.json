@@ -1,0 +1,152 @@
+{
+  "cuisine": "steak",
+  "spots": [
+    {
+      "id": "steak-ember-bone",
+      "name": "Ember & Bone",
+      "lat": 47.6143,
+      "lng": -122.3155,
+      "address": "E Pike St, Seattle, WA",
+      "street": "E Pike St",
+      "price": "$$$$",
+      "distanceMi": 0.41,
+      "scores": {
+        "cook": 93,
+        "cut": 92,
+        "sides": 82,
+        "value": 68,
+        "service": 91
+      },
+      "waitMinutes": 12,
+      "ambiancePct": 91,
+      "ambianceMentionRate": 0.5,
+      "bestAt": "Perfect cook",
+      "reason": "Steaks land at the exact temperature reviewers ordered.",
+      "reviewCount": 288,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": true,
+      "openUntil": "11 PM",
+      "phone": "(206) 555-0121"
+    },
+    {
+      "id": "steak-broadway-chop",
+      "name": "Broadway Chophouse",
+      "lat": 47.6175,
+      "lng": -122.3211,
+      "address": "Broadway, Seattle, WA",
+      "street": "Broadway",
+      "price": "$$$$",
+      "distanceMi": 0.1,
+      "scores": {
+        "cook": 87,
+        "cut": 95,
+        "sides": 78,
+        "value": 60,
+        "service": 85
+      },
+      "waitMinutes": 15,
+      "ambiancePct": 87,
+      "ambianceMentionRate": 0.5,
+      "bestAt": "Best cuts",
+      "reason": "Dry-aged cuts get called the best in the neighborhood.",
+      "reviewCount": 351,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0122"
+    },
+    {
+      "id": "steak-pine-grill",
+      "name": "Pine Street Grill",
+      "lat": 47.615,
+      "lng": -122.324,
+      "address": "E Pine St, Seattle, WA",
+      "street": "E Pine St",
+      "price": "$$$",
+      "distanceMi": 0.31,
+      "scores": {
+        "cook": 80,
+        "cut": 78,
+        "sides": 90,
+        "value": 76,
+        "service": 78
+      },
+      "waitMinutes": 10,
+      "ambiancePct": 80,
+      "ambianceMentionRate": 0.33,
+      "bestAt": "Best sides",
+      "reason": "The creamed corn and crispy potatoes steal the show.",
+      "reviewCount": 164,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0123"
+    },
+    {
+      "id": "steak-hill-frites",
+      "name": "Hill Steak Frites",
+      "lat": 47.6214,
+      "lng": -122.3135,
+      "address": "15th Ave E, Seattle, WA",
+      "street": "15th Ave E",
+      "price": "$$",
+      "distanceMi": 0.39,
+      "scores": {
+        "cook": 76,
+        "cut": 72,
+        "sides": 74,
+        "value": 92,
+        "service": 82
+      },
+      "waitMinutes": 9,
+      "ambiancePct": 73,
+      "ambianceMentionRate": 0.25,
+      "bestAt": "Best value",
+      "reason": "Steak frites for under $30, and it's still cooked right.",
+      "reviewCount": 209,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "9 PM",
+      "phone": "(206) 555-0124"
+    }
+  ],
+  "pickId": "steak-ember-bone",
+  "pickReason": "Steaks land at the exact temperature reviewers ordered.",
+  "areaAverages": {
+    "cook": 84,
+    "cut": 84,
+    "sides": 81,
+    "value": 74,
+    "service": 84,
+    "waitMinutes": 12,
+    "ambiancePct": 83
+  },
+  "reviewsRead": 1012,
+  "scrapedAt": "2026-10-25T17:00:00+00:00",
+  "source": "demo",
+  "demo": true,
+  "collectionStatus": "complete",
+  "caveats": [
+    "Sample data: made-up spot names and scores, for the stage demo. Not real businesses."
+  ]
+}

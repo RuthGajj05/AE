@@ -1,0 +1,147 @@
+{
+  "cuisine": "pizza",
+  "spots": [
+    {
+      "id": "pizza-blistered-pie",
+      "name": "Blistered Pie Co.",
+      "lat": 47.616,
+      "lng": -122.3195,
+      "address": "E Pine St, Seattle, WA",
+      "street": "E Pine St",
+      "price": "$$",
+      "distanceMi": 0.22,
+      "scores": {
+        "crust": 95,
+        "sauce": 88,
+        "toppings": 84,
+        "value": 80
+      },
+      "waitMinutes": 14,
+      "ambiancePct": 76,
+      "ambianceMentionRate": 0.25,
+      "bestAt": "Best crust",
+      "reason": "Leopard-spotted, chewy crust shows up in most 5-star reviews.",
+      "reviewCount": 467,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": true,
+      "openUntil": "11 PM",
+      "phone": "(206) 555-0131"
+    },
+    {
+      "id": "pizza-red-sauce",
+      "name": "Red Sauce Slice",
+      "lat": 47.6198,
+      "lng": -122.3215,
+      "address": "Broadway E, Seattle, WA",
+      "street": "Broadway E",
+      "price": "$",
+      "distanceMi": 0.06,
+      "scores": {
+        "crust": 78,
+        "sauce": 93,
+        "toppings": 76,
+        "value": 90
+      },
+      "waitMinutes": 6,
+      "ambiancePct": 64,
+      "ambianceMentionRate": 0.2,
+      "bestAt": "Best sauce",
+      "reason": "Sweet, garlicky sauce and slices ready in minutes.",
+      "reviewCount": 389,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "2 AM",
+      "phone": "(206) 555-0132"
+    },
+    {
+      "id": "pizza-topping-theory",
+      "name": "Topping Theory",
+      "lat": 47.6221,
+      "lng": -122.315,
+      "address": "E Republican St, Seattle, WA",
+      "street": "E Republican St",
+      "price": "$$",
+      "distanceMi": 0.35,
+      "scores": {
+        "crust": 80,
+        "sauce": 79,
+        "toppings": 94,
+        "value": 72
+      },
+      "waitMinutes": 19,
+      "ambiancePct": 85,
+      "ambianceMentionRate": 0.33,
+      "bestAt": "Best toppings",
+      "reason": "Creative, generous toppings, though weekends get slow.",
+      "reviewCount": 152,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "10 PM",
+      "phone": "(206) 555-0133"
+    },
+    {
+      "id": "pizza-olive-way",
+      "name": "Olive Way Pizza",
+      "lat": 47.6183,
+      "lng": -122.3262,
+      "address": "E Olive Way, Seattle, WA",
+      "street": "E Olive Way",
+      "price": "$",
+      "distanceMi": 0.25,
+      "scores": {
+        "crust": 70,
+        "sauce": 72,
+        "toppings": 70,
+        "value": 94
+      },
+      "waitMinutes": 5,
+      "ambiancePct": 52,
+      "ambianceMentionRate": 0.1,
+      "bestAt": "Best value",
+      "reason": "$4 slices and almost no wait at the counter.",
+      "reviewCount": 233,
+      "sourceKinds": [
+        "demo"
+      ],
+      "collectionStatus": "complete",
+      "rating": null,
+      "platformReviewCount": null,
+      "pick": false,
+      "openUntil": "12 AM",
+      "phone": "(206) 555-0134"
+    }
+  ],
+  "pickId": "pizza-blistered-pie",
+  "pickReason": "Leopard-spotted, chewy crust shows up in most 5-star reviews.",
+  "areaAverages": {
+    "crust": 81,
+    "sauce": 83,
+    "toppings": 81,
+    "value": 84,
+    "waitMinutes": 11,
+    "ambiancePct": 69
+  },
+  "reviewsRead": 1241,
+  "scrapedAt": "2026-10-25T17:00:00+00:00",
+  "source": "demo",
+  "demo": true,
+  "collectionStatus": "complete",
+  "caveats": [
+    "Sample data: made-up spot names and scores, for the stage demo. Not real businesses."
+  ]
+}
