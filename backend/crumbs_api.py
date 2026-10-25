@@ -6,6 +6,7 @@ from typing import Literal
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
+import alerts
 import config
 import cuisines
 import demo
@@ -117,6 +118,9 @@ class OnboardIn(BaseModel):
     goals: list[str] = Field(default_factory=list, max_length=10)
     questionnaire: Questionnaire = Field(default_factory=Questionnaire)
     deepResearch: bool = False
+    # Public "fresh shipment" alerts from Square restocks; off unless the owner opts in. Counts are never public.
+    shareStockAlerts: bool = False
+    lowStockThreshold: float | None = Field(None, ge=0, le=100000)
 
 
 @router.post("/business/onboard")
@@ -134,6 +138,10 @@ def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Quer
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
+    settings = {"share_stock_alerts": int(body.shareStockAlerts)}
+    if body.lowStockThreshold is not None:
+        settings["low_stock_threshold"] = body.lowStockThreshold
+    store.update_business(business_id, **settings)
     background.add_task(pipeline.score_business, business_id, body.deepResearch)
     return {"businessId": business_id, "status": "queued"}
 
@@ -152,3 +160,71 @@ def business_rivals(business_id: str, days: int = Query(7, ge=1, le=90), demo_fl
     if result is None:
         raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
     return result
+
+
+# ---------- alerts ----------
+
+@router.get("/alerts")
+def list_alerts(
+    audience: Literal["consumer", "business"] = "consumer",
+    businessId: str | None = Query(None, max_length=120),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lng: float | None = Query(None, ge=-180, le=180),
+    radiusMi: float = Query(1.0, ge=0.1, le=5),
+    cuisine: str | None = None,
+    demo_flag: bool = Query(False, alias="demo"),
+):
+    if cuisine:
+        _cuisine(cuisine)
+    if audience == "business" and not businessId:
+        raise HTTPException(400, "Business alerts need a businessId.")
+    if audience == "consumer" and (lat is None or lng is None):
+        lat, lng = config.CAPITOL_HILL["lat"], config.CAPITOL_HILL["lng"]
+    business = store.get_business(businessId) if businessId else None
+    if audience == "business" and business is None and not _demo(demo_flag):
+        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+    if business and (lat is None or lng is None) and business["lat"] is not None:
+        lat, lng = business["lat"], business["lng"]  # owners' distances are measured from their shop
+    if _demo(demo_flag) or (business and business["demo"]):
+        return demo.alerts(audience=audience, business_id=businessId, lat=lat, lng=lng, radius_mi=radiusMi, cuisine=cuisine)
+    try:
+        return alerts.list_alerts(audience=audience, lat=lat, lng=lng, radius_mi=radiusMi, business=business, cuisine=cuisine)
+    except Exception:
+        raise HTTPException(502, "Alerts aren't loading right now. Please try again in a minute.")
+
+
+@router.post("/alerts/{alert_id}/read")
+def mark_alert_read(alert_id: str):
+    if not alert_id or len(alert_id) > 120:
+        raise HTTPException(400, "That alert id doesn't look right.")
+    store.mark_read(alert_id)
+    return {"ok": True}
+
+
+def _refresh_alerts(business_id: str, monitor: bool, stock: bool) -> None:
+    """Background: Ruth's monitor and the Square stock check. A failure in one doesn't stop the other."""
+    if monitor:
+        try:
+            alerts.run_monitor(business_id)
+        except Exception as e:
+            store.update_business(business_id, scoring_error=f"Monitor: {str(e)[:250]}")
+    if stock:
+        try:
+            alerts.check_stock(business_id)
+        except Exception as e:
+            store.update_business(business_id, scoring_error=f"Stock check: {str(e)[:250]}")
+
+
+@router.post("/business/{business_id}/alerts/refresh")
+def refresh_alerts(business_id: str, background: BackgroundTasks, monitor: bool = True, stock: bool = True):
+    b = store.get_business(business_id)
+    if b is None:
+        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+    if b["demo"]:
+        return {"status": "skipped", "demo": True}
+    run_monitor = monitor and all(config.has_key(k) for k in pipeline.LIVE_KEYS)
+    run_stock = stock and config.has_key("SQUARE_ACCESS_TOKEN")
+    if not run_monitor and not run_stock:
+        raise HTTPException(503, "Alert checks need ANTHROPIC_API_KEY and TAVILY_API_KEY (monitor) or SQUARE_ACCESS_TOKEN (stock) in backend/.env.")
+    background.add_task(_refresh_alerts, business_id, run_monitor, run_stock)
+    return {"status": "queued", "monitor": run_monitor, "stock": run_stock}

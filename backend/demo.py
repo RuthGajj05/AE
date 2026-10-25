@@ -43,6 +43,30 @@ def places(q: str) -> list[dict]:
     return [p for p in _load("places.json")["results"] if q in p["name"].lower()][:8]
 
 
+def alerts(*, audience: str, business_id: str | None, lat: float | None, lng: float | None, radius_mi: float,
+           cuisine: str | None = None) -> list[dict]:
+    """backend/demo/alerts.json in the live shape; "minutesAgo" becomes createdAt so the demo always looks recent."""
+    import geo  # here, not at the top: geo imports Ruth's agent, which demo mode doesn't need
+
+    now = datetime.now(timezone.utc)
+    rows = [a for a in _load("alerts.json")["alerts"] if a["audience"] == audience]
+    if audience == "business":
+        rows = [a for a in rows if a.get("businessId") == (business_id or BUSINESS_ID)]
+    if cuisine:
+        rows = [a for a in rows if a.get("cuisine") in (None, cuisine)]
+    read = store.read_ids([a["id"] for a in rows])
+    out = []
+    for a in rows:
+        distance = round(geo.miles_between(lat, lng, a["lat"], a["lng"]), 2) if lat is not None and lng is not None else None
+        if audience == "consumer" and distance is not None and distance > radius_mi:
+            continue
+        out.append({"id": a["id"], "kind": a["kind"], "audience": a["audience"], "spotId": a["spotId"], "cuisine": a["cuisine"],
+                    "title": a["title"], "detail": a["detail"], "distanceMi": distance,
+                    "createdAt": (now - timedelta(minutes=a["minutesAgo"])).isoformat(timespec="seconds"),
+                    "read": a["id"] in read, "demo": True})
+    return sorted(out, key=lambda a: a["createdAt"], reverse=True)
+
+
 def business_you() -> dict:
     return copy.deepcopy(_load("business.json")["you"])
 
@@ -56,6 +80,7 @@ def seed() -> None:
                               business_id=BUSINESS_ID, demo=True, profile={"businessType": "Sushi bar", "location": business["area"]})
         store.update_business(BUSINESS_ID, spot_id=BUSINESS_ID, scoring_status="complete")
         store.set_goals(BUSINESS_ID, business["goals"])
+    store.update_business(BUSINESS_ID, share_stock_alerts=1)  # the demo shop shares fresh-stock alerts
 
     cuisine = business["cuisine"]
     since = datetime.now(timezone.utc) - timedelta(days=7)
