@@ -7,7 +7,7 @@ export function LoadingView() {
           <span className="skeleton" style={{ width: 'min(420px, 80%)', height: 44 }} />
         </div>
       </div>
-      <p className="loading-text">Gathering nearby competitors and reviews…</p>
+      <p className="loading-text">Loading the latest competitor report…</p>
       <div className="compare-grid">
         {[0, 1, 2].map((i) => (
           <div key={i} className="glass compare">
@@ -40,13 +40,13 @@ export function EmptyState({ title, text, action }) {
   )
 }
 
-export function ErrorView({ message, onRetry, onUseSample }) {
+export function ErrorView({ message, onRetry, onUseSaved }) {
   return (
     <div className="glass empty error" role="alert">
       <h3>Couldn't load the dashboard</h3>
       <p>{message}</p>
       <div className="empty-actions">
-        <button className="btn" onClick={onUseSample}>Use sample data</button>
+        <button className="btn" onClick={onUseSaved}>Use saved report</button>
         <button className="btn btn-primary" onClick={onRetry}>Try again</button>
       </div>
       <p className="muted small">Or drop the scraper's JSON file anywhere on this page.</p>

@@ -1,6 +1,5 @@
-export function ComplaintThemes({ themes }) {
-  const max = Math.max(...themes.map((t) => t.mentions), 1)
-  const total = themes.reduce((s, t) => s + t.mentions, 0)
+export function ComplaintThemes({ themes, total }) {
+  const max = Math.max(...themes.map((t) => t.count), 1)
 
   return (
     <div className="glass themes">
@@ -10,18 +9,20 @@ export function ComplaintThemes({ themes }) {
             <div className="theme-row">
               <span className="theme-label">{t.label}</span>
               <span className="theme-count">
-                {t.mentions.toLocaleString()}
-                <span className="muted"> mention{t.mentions === 1 ? '' : 's'}</span>
+                {t.count.toLocaleString()}
+                <span className="muted">
+                  {t.unit === 'shops' ? ` of ${total} shops` : ` mention${t.count === 1 ? '' : 's'}`}
+                </span>
               </span>
             </div>
             <div className="theme-track">
-              <div
-                className="theme-bar"
-                style={{ width: `${(t.mentions / max) * 100}%` }}
-                title={total ? `${Math.round((t.mentions / total) * 100)}% of all complaints` : undefined}
-              />
+              <div className="theme-bar" style={{ width: `${(t.count / max) * 100}%` }} />
             </div>
-            {t.quote && <p className="theme-quote">“{t.quote}”</p>}
+            {t.quote && (
+              <p className="theme-quote">
+                “{t.quote}”{t.quoteBy && <span className="theme-quote-by"> — {t.quoteBy}</span>}
+              </p>
+            )}
           </li>
         ))}
       </ol>

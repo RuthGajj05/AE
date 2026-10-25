@@ -1,0 +1,411 @@
+{
+  "business": "Test Bakery",
+  "type": "bakery",
+  "location": "Capitol Hill, Seattle",
+  "date": "2026-10-25",
+  "market_summary": "Capitol Hill has a lot of bakeries, and most do one thing well. Bakery Nouveau (15th Ave E) is the best-known pastry shop, with about 1,463 Yelp reviews and Yelp's #1 spot for Capitol Hill bakeries. The French Guys (E Roy St, 4.4\u2605/185) covers French pastry and bread. Several shops serve one niche: Nuflours (100% gluten-free, 4.3\u2605/275), Hello Robin (cookies, 4.5\u2605/872), Mt. Bagel and Rubinstein (bagels) and Cinnaholic (vegan cinnamon rolls, 3.9\u2605/420). Macrina's Capitol Hill caf\u00e9 (Aloha Caf\u00e9, 19th & Aloha) and Wild Rye (Olive Way, near downtown) are broader bakery-caf\u00e9s. The best-rated shops get repeated service complaints: Nouveau, Macrina Aloha, Nuflours and The French Guys (long waits). Prices vary a lot: a plain croissant costs $3.50 at Nouveau and $6.25 at Wild Rye. Almost every shop closes between 2:30 and 6 pm, and Nouveau is closed Monday and Tuesday.",
+  "competitors": [
+    {
+      "name": "Bakery Nouveau (Capitol Hill)",
+      "address": "137 15th Ave E, Seattle, WA 98112",
+      "distance_note": "~630 m (OSM)",
+      "website": "https://www.bakerynouveau.com/",
+      "rating": null,
+      "review_count": 1463,
+      "specialties": [
+        "Twice-baked almond croissant",
+        "Croissants and viennoiserie",
+        "Chocolate cake and whole desserts",
+        "Artisan breads (baguette, sourdough, Saturday cheddar-jalape\u00f1o sourdough)",
+        "Bean-to-bar chocolates and macarons"
+      ],
+      "price_points": [
+        "Butter croissant: $3.50",
+        "Chocolate croissant: $4.75",
+        "Twice-baked almond croissant: $6.75",
+        "Twice-baked chocolate croissant: $7.25"
+      ],
+      "praised_for": [
+        "Exceptional croissants and cookies",
+        "Rich chocolate cake",
+        "Ham and cheese croissant",
+        "Fresh, consistent pastries",
+        "Large, attractive space"
+      ],
+      "complaints": [
+        "Customer service described as lackluster (several Yelp snippets)",
+        "Sandwiches called basic and overpriced (one review)",
+        "Closed Monday and Tuesday; reduced bread selection noted on its own site"
+      ],
+      "sources": [
+        "https://www.yelp.com/biz/bakery-nouveau-seattle-3",
+        "https://www.yelp.com/biz/bakery-nouveau-seattle-3?start=220",
+        "https://m.yelp.com/biz/bakery-nouveau-seattle-3?start=560",
+        "https://www.tripadvisor.com/Restaurant_Review-g60878-d4317241-Reviews-Bakery_Nouveau-Seattle_Washington.html",
+        "https://bakerynouveau.com/our-creations/breakfast-pastries/",
+        "https://bakerynouveau.com/our-creations/breads/",
+        "https://bakerynouveau.com/product/butter-croissant",
+        "https://bakerynouveau.com/product/chocolate-croissant",
+        "https://bakerynouveau.com/product/2x-baked-almond-croissant",
+        "https://bakerynouveau.com/product/2x-baked-chocolate-croissant"
+      ]
+    },
+    {
+      "name": "The French Guys",
+      "address": "810 E Roy St, Seattle, WA 98102",
+      "distance_note": "~290 m, the closest bakery (OSM)",
+      "website": "https://www.thefrenchguys.com",
+      "rating": 4.4,
+      "review_count": 185,
+      "specialties": [
+        "Croissants (almond, hazelnut, raspberry-filled)",
+        "French breads and brioche",
+        "Kouign amann, canel\u00e9",
+        "Quiche, sandwiches",
+        "Lemon tart"
+      ],
+      "price_points": [
+        "Almond croissant ('Almost Croissant' in the Yelp snippet): $6 (Yelp review)",
+        "Quiche slice: $8.95 (atly.com)"
+      ],
+      "praised_for": [
+        "Croissants called amazing and flaky",
+        "Wide selection of croissants, breads and sandwiches",
+        "Polite staff; 'a little slice of Paris' ambiance",
+        "Convenient parking"
+      ],
+      "complaints": [
+        "Waits can be long, especially when ordering coffee (TripAdvisor)",
+        "Pain Suisse called dry and hollow (Yelp)",
+        "Chocolate croissants sell out quickly; 'a bit expensive' (Reddit)",
+        "TripAdvisor rating only 3.8"
+      ],
+      "sources": [
+        "https://www.yelp.com/biz/the-french-guys-seattle",
+        "https://m.yelp.com/biz/the-french-guys-seattle?start=40",
+        "https://www.tripadvisor.com/Restaurant_Review-g60878-d27481834-Reviews-The_French_Guys-Seattle_Washington.html",
+        "https://www.atly.com/location/TheFrenchGuysBakery",
+        "https://www.reddit.com/r/Seattle/comments/1be3ent/hey_seattle_lets_talk_croissants",
+        "https://www.thefrenchguys.com"
+      ]
+    },
+    {
+      "name": "Nuflours Bakery",
+      "address": "518 15th Ave E, Seattle, WA 98112",
+      "distance_note": "~450 m (OSM)",
+      "website": "https://nuflours.com/",
+      "rating": 4.3,
+      "review_count": 275,
+      "specialties": [
+        "100% gluten-free (also peanut- and rice-free) pastries, breads and cakes",
+        "Custom gluten-free cakes",
+        "Vegan cookies",
+        "Danishes, brownies, jumbo muffins"
+      ],
+      "price_points": [
+        "Baguette (gluten-free): $7.15",
+        "Flax sandwich bread: $12.65",
+        "Cheese danish: $5.78",
+        "Vegan chocolate chip cookie: $4.95",
+        "Sugar cookie: $4.50",
+        "Cake slice: $8.50",
+        "Custom cake: from $53.90",
+        "End-of-day deal: 3 items for $12 (third-party menu-site snippet)"
+      ],
+      "praised_for": [
+        "Ranked #1 gluten-free bakery in Seattle on Yelp",
+        "Lunch and desserts called super yummy"
+      ],
+      "complaints": [
+        "Poor customer service on a cake and cupcake order (Yelp)"
+      ],
+      "sources": [
+        "https://www.yelp.com/search?find_desc=Gluten+Free+Bakery&find_loc=Seattle%2C+WA",
+        "https://www.yelp.com/biz/nuflours-seattle?start=80",
+        "https://nuflours.com/",
+        "https://nuflours.com/collections/all",
+        "https://nuflours.com/collections/menu-2023",
+        "https://www.menuwithprice.com/menu/nuflours"
+      ]
+    },
+    {
+      "name": "Hello Robin (Capitol Hill)",
+      "address": "522 19th Ave E, Seattle, WA 98112",
+      "distance_note": "~0.6 mi east (not in OSM results)",
+      "website": "https://www.hellorobincookies.com",
+      "rating": 4.5,
+      "review_count": 872,
+      "specialties": [
+        "Cookies (Mackles'more s'mores cookie, brown butter snickerdoodle, flourless chocolate)",
+        "Cookie ice cream sandwiches with Molly Moon's",
+        "Bake-at-home cookie dough",
+        "Cookie cakes",
+        "Friday challah (pre-order)"
+      ],
+      "price_points": [
+        "9-inch cookie cake: $35 ($40 for s'more)",
+        "12-inch cookie cake: $45",
+        "Take-and-bake cookie cake: $22.50",
+        "Single cookie: $2.65, s'more $3.15 (Yelp review of the Bellevue branch, date unknown)",
+        "Mixed cookie box: $16.75 (Postmates delivery price)"
+      ],
+      "praised_for": [
+        "'Best cookies in Seattle' (many reviews)",
+        "Served fresh and warm",
+        "Friendly, fast service",
+        "Gluten-free and vegan options"
+      ],
+      "complaints": [
+        "'Costly, smallish' cookies (review of the Bellevue branch)",
+        "Limited seating"
+      ],
+      "sources": [
+        "https://www.yelp.com/biz/hello-robin-seattle",
+        "https://www.yelp.com/search?find_desc=Nestle+Toll+House+Cafe+By+Chip&find_loc=Capitol+Hill%2C+Seattle%2C+WA",
+        "https://www.tripadvisor.com/Restaurant_Review-g60878-d4854990-Reviews-Hello_Robin-Seattle_Washington.html",
+        "https://www.hellorobincookies.com/faq",
+        "https://www.yelp.com/biz/hello-robin-bellevue",
+        "https://postmates.com/store/hello-robin/IB-pN3NmRG6Wgxrat-eCLg",
+        "https://en.wikipedia.org/wiki/Hello_Robin"
+      ]
+    },
+    {
+      "name": "Macrina Bakery \u2013 Aloha Caf\u00e9 (Capitol Hill)",
+      "address": "746 19th Ave E, Seattle, WA 98112",
+      "distance_note": "~0.7 mi northeast (not in OSM results)",
+      "website": "https://macrinabakery.com/aloha-cafe",
+      "rating": 3.9,
+      "review_count": 307,
+      "specialties": [
+        "Artisan breads (Casera, Giuseppe, baguette)",
+        "Morning buns, orange hazelnut pinwheel, cornetti",
+        "Quiche, sandwiches, brunch",
+        "Seats 70, with outdoor seating"
+      ],
+      "price_points": [
+        "Macrina baguette: $5.35 (online order)",
+        "Ciabatta loaf: $5.80",
+        "Challah 17 oz: $8.05",
+        "Quiche slice: $7.50 (veg) / $7.75 (meat)",
+        "Avocado toast: $9.25",
+        "Baker's dozen bagels + cream cheese: $29.75 (catering menu)",
+        "Half-dozen cookies: $20.90 (catering menu)",
+        "Croissant: $5.55 (TripAdvisor review of the Belltown branch, date unknown)"
+      ],
+      "praised_for": [
+        "Wide bread and pastry selection",
+        "Good place for brunch and meeting friends",
+        "Free sparkling water"
+      ],
+      "complaints": [
+        "Service efficient but 'not really friendly'",
+        "Chocolate croissant tasted dry",
+        "Line-policy incident called embarrassing (TripAdvisor)",
+        "TripAdvisor rating 3.8 (13 reviews)"
+      ],
+      "sources": [
+        "https://www.yelp.com/search?find_desc=Macrina+Bakery&find_loc=Magnolia%2C+Seattle%2C+WA+98199",
+        "https://www.tripadvisor.com/Restaurant_Review-g60878-d15351359-Reviews-Macrina_Bakery_Cafe-Seattle_Washington.html",
+        "https://www.mapquest.com/us/washington/macrina-bakery-cafe-388162577",
+        "https://macrinabakery.com/aloha-cafe",
+        "https://macrinabakery.com/all-cafes",
+        "https://macrinabakery.com/cafe-menu",
+        "https://macrinabakery.com/catering-menu",
+        "https://order.macrinabakery.com/shop/bread/7",
+        "https://www.tripadvisor.com/Restaurant_Review-g60878-d793812-Reviews-Macrina_Bakery-Seattle_Washington.html"
+      ]
+    },
+    {
+      "name": "Mt. Bagel",
+      "address": "801 26th Ave E, Seattle, WA 98112",
+      "distance_note": "~1.5 km, Madison Valley edge (OSM)",
+      "website": "https://www.mtbagel.com",
+      "rating": 4.7,
+      "review_count": 108,
+      "specialties": [
+        "7 bagel flavors (plain, sesame, poppy, salt, garlic, onion, everything)",
+        "3 schmears",
+        "Chocolate chip cookie (its only sweet)"
+      ],
+      "price_points": [
+        "Bagel: $3 each",
+        "Dozen bagels: $29",
+        "8 oz cream cheese: $6 / $9.50"
+      ],
+      "praised_for": [
+        "Fresh, malty, chewy bagels; 'go-to bagel spot'",
+        "Best dozen-bagel value in Seattle (Substack)",
+        "Infatuation score 8.6"
+      ],
+      "complaints": [
+        "Does not slice or toast; card only",
+        "Open only 9 am\u20132 pm Tue\u2013Sun, and sells out early (sold out by 9:20 am on its opening day)",
+        "Half-dozen with schmear (~$24\u201325) called expensive"
+      ],
+      "sources": [
+        "https://www.yelp.com/search?find_desc=Boiled+Bagels&find_loc=15th+Avenue+East%2C+Seattle%2C+WA",
+        "https://m.m.yelp.com/biz/mt-bagel-seattle-2?start=40",
+        "https://www.yelp.com/biz/mt-bagel-seattle-2",
+        "https://www.mtbagel.com",
+        "https://www.mtbagel.com/menu",
+        "https://itsashanda.substack.com/p/mt-bagel-seattle-review",
+        "https://itsashanda.substack.com/p/best-bagel-seattle-value-quality-price",
+        "https://www.theinfatuation.com/seattle/reviews/mt-bagel"
+      ]
+    },
+    {
+      "name": "Rubinstein Bagels (Capitol Hill)",
+      "address": "403 15th Ave E, Seattle, WA 98112",
+      "distance_note": "~0.4 mi; same 15th Ave E strip as Nouveau and Nuflours (missing from OSM; OSM listed only the Eastlake branch)",
+      "website": "https://rubinsteinbagels.com/",
+      "rating": 3.4,
+      "review_count": 88,
+      "specialties": [
+        "NYC-style hand-rolled bagels",
+        "Hot and cold bagel sandwiches",
+        "Lox platters, catering"
+      ],
+      "price_points": [
+        "Single bagel: $3.60 / half dozen $20.80 / baker's dozen $38.35 (order.online pickup menu)",
+        "An older-looking menu page lists $3.25 / $19.00 / $35.00"
+      ],
+      "praised_for": [
+        "One Yelp snippet: 'IMO best bagel in Seattle'"
+      ],
+      "complaints": [
+        "Low Yelp rating (3.4)",
+        "Substack reviewer says prices rose while quality dropped as the chain expanded",
+        "Small schmear portion (review of the Eastlake branch, 2.4\u2605/10)"
+      ],
+      "sources": [
+        "https://www.yelp.com/search?find_desc=Bagels&find_loc=Capitol+Hill%2C+Seattle%2C+WA",
+        "https://order.online/store/rubinstein-bagels-seattle-24345369?hideModal=true&pickup=true",
+        "https://menu-18219.orderexperience.net/64dab8284a1bdb26940df747/menu",
+        "https://itsashanda.substack.com/p/rubinstein-bagels-redmond-review-eastside",
+        "https://m.yelp.com/biz/rubinstein-bagels-seattle-6"
+      ]
+    },
+    {
+      "name": "Cinnaholic",
+      "address": "816 E Pike St, Seattle, WA 98122",
+      "distance_note": "~1.1 km, Pike/Pine (OSM)",
+      "website": "https://locations.cinnaholic.com/ll/us/wa/seattle/31/",
+      "rating": 3.9,
+      "review_count": 420,
+      "specialties": [
+        "100% plant-based, customizable cinnamon rolls",
+        "Brownies, cookies, edible cookie dough",
+        "Open until 11 pm daily"
+      ],
+      "price_points": [
+        "Old Skool roll: $9.08 (Yelp menu, likely the delivery-app price)",
+        "Cookie Monster roll: $15.12 (Yelp menu)",
+        "Plain roll: from $6.59 (DoorDash)",
+        "Custom roll: ~$8 each (2020-era blog review)"
+      ],
+      "praised_for": [
+        "Soft rolls with strong-flavored frostings",
+        "Friendly, helpful staff",
+        "Popular with vegans"
+      ],
+      "complaints": [
+        "'Even pricier now' (TripAdvisor)",
+        "Made to order, so it takes a while; few seats"
+      ],
+      "sources": [
+        "https://www.yelp.com/search?find_desc=Cookies&find_near=cinnaholic-seattle",
+        "https://www.yelp.com/biz/cinnaholic-seattle",
+        "https://www.yelp.com/biz/cinnaholic-seattle?start=40",
+        "https://www.tripadvisor.com/Restaurant_Review-g60878-d15287264-Reviews-Cinnaholic-Seattle_Washington.html",
+        "https://www.doordash.com/en/business/cinnaholic-12717/menu",
+        "https://seattleunexplored.com/cinneholic-seattle-review"
+      ]
+    },
+    {
+      "name": "Wild Rye Bakery",
+      "address": "1017 Olive Way, Seattle, WA 98101",
+      "distance_note": "~1.3 km, at the downtown/Capitol Hill edge (OSM)",
+      "website": "https://www.wildryebakery.com/",
+      "rating": 4.0,
+      "review_count": 24,
+      "specialties": [
+        "Croissants made with Cairnspring Mills flour and cultured butter",
+        "'Crookie' croissant",
+        "Sourdough rye, baguette",
+        "Gluten-free seis leches cake",
+        "Also bakes for Seattle Convention Center events"
+      ],
+      "price_points": [
+        "Butter croissant: $6.25",
+        "Almond croissant: $6.75",
+        "Pain au chocolat: $6.75",
+        "Ham and cheese croissant: $9.50",
+        "Cinnamon roll: $5.75",
+        "Chocolate chip cookie: $3.75",
+        "Quiche: $9.75",
+        "Scone: $7.25",
+        "Baguette: $6.50",
+        "Sourdough rye boule: $8.75"
+      ],
+      "praised_for": [
+        "Delicious pastries",
+        "Reasonably priced"
+      ],
+      "complaints": [
+        "Few reviews (24); open only Mon\u2013Sat until 2:30 pm"
+      ],
+      "sources": [
+        "https://www.yelp.com/biz/wild-rye-seattle",
+        "https://www.yelp.com/search?find_desc=German+Bread&find_loc=Olive+Way%2C+Seattle%2C+WA",
+        "https://www.wildryebakery.com/",
+        "https://www.wildryebakery.com/the-menu"
+      ]
+    }
+  ],
+  "price_benchmarks": [
+    "Plain butter croissant: $3.50\u2013$6.25 (3 shops: Bakery Nouveau $3.50, Macrina $5.55 from a Belltown-branch review, Wild Rye $6.25)",
+    "Almond croissant: $6.00\u2013$6.75 (3 shops: The French Guys $6 from a Yelp review, Bakery Nouveau twice-baked $6.75, Wild Rye $6.75)",
+    "Pain au chocolat / chocolate croissant: $4.75\u2013$6.75 (2 shops: Bakery Nouveau $4.75, Wild Rye $6.75)",
+    "Baguette: $5.35\u2013$7.15 (3 shops: Macrina $5.35, Wild Rye $6.50, Nuflours gluten-free $7.15)",
+    "Quiche slice: $7.50\u2013$9.75 (3 shops: Macrina $7.50\u2013$7.75, The French Guys $8.95, Wild Rye $9.75)",
+    "Single cookie: $2.65\u2013$4.95 (3 shops: Hello Robin $2.65 at its Bellevue branch per a Yelp review, Wild Rye $3.75, Nuflours $4.50\u2013$4.95 gluten-free)",
+    "Single bagel: $3.00\u2013$3.60 (2 shops: Mt. Bagel $3, Rubinstein Capitol Hill $3.25\u2013$3.60)",
+    "Dozen bagels: $29 for a dozen to $38.35 for a baker's dozen (3 shops: Mt. Bagel $29, Macrina $29.75 for a baker's dozen with cream cheese, Rubinstein $35\u2013$38.35 for a baker's dozen)",
+    "Cinnamon roll: $5.75\u2013$9.08 (2 shops: Wild Rye $5.75; Cinnaholic $6.59+ plain on DoorDash, $9.08 Old Skool)",
+    "Cake slice: $8.50 (Nuflours only)"
+  ],
+  "insights": [
+    {
+      "recommendation": "Don't try to win on croissant price. Bakery Nouveau already sells the cheapest croissant ($3.50 butter / $4.75 chocolate) and has the biggest following. Compete on consistency and freshness instead, and price a butter croissant in the $4.50\u2013$5.50 middle of the market.",
+      "evidence": "Plain croissants range from $3.50 (Nouveau) to $6.25 (Wild Rye); Macrina charged $5.55 at its Belltown branch and a reviewer called it over-priced. Quality complaints come up at 3 of the 4 croissant sellers: The French Guys' pain Suisse was 'dry, hollow', Macrina Aloha's chocolate croissant 'tasted a little dry', and The French Guys' chocolate croissants 'run out quickly'."
+    },
+    {
+      "recommendation": "Make fast, friendly service a selling point, for example a separate grab-and-go pastry line or pre-boxed items at peak times. The neighborhood's leading bakeries are regularly criticized for service.",
+      "evidence": "Service or wait complaints show up at 4 of the 9 competitors: Bakery Nouveau ('customer service was lackluster', in several Yelp snippets), Macrina Aloha ('not really friendly'; a line-policy incident), Nuflours ('poor customer service' on a cake order) and The French Guys ('the wait can be an issue', TripAdvisor 3.8)."
+    },
+    {
+      "recommendation": "Stay open Monday and Tuesday and later in the afternoon (to 6\u20137 pm), with bread and savory items for commuters picking up dinner.",
+      "evidence": "Bakery Nouveau, the most-reviewed shop, is closed Monday and Tuesday. Mt. Bagel is closed Monday and open only 9 am\u20132 pm. Wild Rye closes at 2:30 pm and all day Sunday. The French Guys closes around 4 pm, Nuflours at 5 pm and Macrina Aloha at 6 pm. Only Hello Robin (to 9\u201310 pm) and Cinnaholic (to 11 pm) stay open in the evening, and both sell only sweets."
+    },
+    {
+      "recommendation": "If you sell bagels, do the things Mt. Bagel won't: slice and toast to order, make sandwiches and keep stock into the afternoon. Price near Mt. Bagel ($3 each, $29 a dozen), not Rubinstein ($38.35 for a baker's dozen).",
+      "evidence": "Mt. Bagel (4.7\u2605) states 'We don't slice or toast', takes cards only, opens 9 am\u20132 pm and sold out by 9:20 am on its opening day. The nearest full-service bagel shop, Rubinstein Capitol Hill on the same 15th Ave E strip, has only 3.4\u2605 (88 reviews), and a local bagel reviewer says its prices rose while quality dropped."
+    },
+    {
+      "recommendation": "Add an end-of-day bundle and a simple loyalty reward to cut waste and bring people back. Two competitors already do this and you'd be matching them.",
+      "evidence": "Nuflours offers '3 items for $12' near end of day. Macrina gives a free chocolate chip cookie for joining its loyalty program and a free loaf on $25+ in-caf\u00e9 purchases (Oct 19\u201325, 2026). Bakery Nouveau requires 48 hours' notice for online orders and none of the other shops showed a similar deal, so same-day pre-ordering could also stand out."
+    }
+  ],
+  "gaps_and_caveats": [
+    "Bakery Nouveau: Yelp snippets showed the review count for the 137 15th Ave E listing (1,463) but no star rating. The TripAdvisor rating (4.7, or 4.8 in a list) is on a listing whose address mixes '1435 E John St' and 'Suite 137', so the rating is left blank.",
+    "The French Guys: no plain butter croissant or baguette price found. The Toast ordering page wouldn't load ('not available in your region'), and the Capitol Hill menu PDF link wasn't readable. The $6 almond croissant comes from a Yelp review snippet.",
+    "Macrina: the $5.55 croissant price comes from a TripAdvisor review of the Belltown branch (date unknown), not the Capitol Hill Aloha Caf\u00e9. Bread prices come from Macrina's online pickup shop, which may differ slightly from walk-in prices.",
+    "Hello Robin: no current single-cookie price was found for the Capitol Hill shop. The $2.65 figure is from a Yelp review of the Bellevue branch (date unknown). The Postmates prices ($16.75 boxes) are delivery-app prices.",
+    "Rubinstein Capitol Hill: two different prices were found ($3.25 vs $3.60 per bagel; $35 vs $38.35 per baker's dozen). The order.online figures may include a platform markup. There were few review details for this branch, so I swapped it in for the Eastlake branch that OSM listed; Eastlake has 2.4\u2605 from 10 reviews.",
+    "Cinnaholic prices come from Yelp's menu, Grubhub and DoorDash, which are likely delivery-app prices. The ~$8 in-store figure is from an older blog post.",
+    "Wild Rye has only 24 Yelp reviews and no TripAdvisor reviews, so its praise and complaints are thin.",
+    "No Google ratings were available. All ratings are from Yelp search snippets (counts vary slightly between snippets) unless noted, and Yelp/TripAdvisor pages couldn't be read in full.",
+    "No price was found anywhere for sourdough loaves or cake slices other than Nuflours ($8.50) and Wild Rye boules ($8.75\u2013$9.50), so there's no 3-shop benchmark for these.",
+    "Not covered in depth: Le Panier, Sugar Bakery, Piroshky, Voodoo Doughnut, Insomnia Cookies and Grand Central Eastlake. They were left out for being farther away or a different format. Dahlia Bakery appeared in Yelp results, but I didn't confirm whether it's still open or how close it is."
+  ]
+}

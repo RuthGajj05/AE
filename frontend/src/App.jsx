@@ -6,9 +6,9 @@ import { IconUpload, Logo } from './components/Icons.jsx'
 import { DATA_URL } from './config.js'
 import { toDashboard } from './data/adapter.js'
 import { useFileDrop } from './useFileDrop.js'
-import sample from './data/sample.json'
+import savedReport from './data/capitol-hill-bakery-report.json'
 
-const sampleState = () => ({ status: 'ready', data: toDashboard(sample, { source: 'sample' }) })
+const savedState = () => ({ status: 'ready', data: toDashboard(savedReport, { source: 'bundled' }) })
 
 function describeError(err) {
   if (err instanceof SyntaxError) return "The data source didn't send valid JSON."
@@ -17,7 +17,7 @@ function describeError(err) {
 }
 
 export default function App() {
-  const [state, setState] = useState(() => (DATA_URL ? { status: 'loading' } : sampleState()))
+  const [state, setState] = useState(() => (DATA_URL ? { status: 'loading' } : savedState()))
   const [attempt, setAttempt] = useState(0)
   const [toast, setToast] = useState(null)
   const fileInput = useRef(null)
@@ -30,7 +30,7 @@ export default function App() {
         if (!res.ok) throw new Error(`The data source answered with an error (${res.status}).`)
         return res.json()
       })
-      .then((raw) => setState({ status: 'ready', data: toDashboard(raw) }))
+      .then((raw) => setState({ status: 'ready', data: toDashboard(raw, { source: 'url' }) }))
       .catch((err) => {
         if (!ctrl.signal.aborted) setState({ status: 'error', message: describeError(err) })
       })
@@ -44,7 +44,7 @@ export default function App() {
   }, [toast])
 
   const reload = () => {
-    if (!DATA_URL) return setState(sampleState())
+    if (!DATA_URL) return setState(savedState())
     setState({ status: 'loading' })
     setAttempt((a) => a + 1)
   }
@@ -94,7 +94,7 @@ export default function App() {
       <main className="page">
         {state.status === 'loading' && <LoadingView />}
         {state.status === 'error' && (
-          <ErrorView message={state.message} onRetry={reload} onUseSample={() => setState(sampleState())} />
+          <ErrorView message={state.message} onRetry={reload} onUseSaved={() => setState(savedState())} />
         )}
         {data && <Dashboard data={data} onLoadFile={() => fileInput.current?.click()} />}
       </main>
@@ -121,19 +121,12 @@ function SourcePill({ data, onReset }) {
       </span>
     )
   }
-  if (data.source === 'sample') {
-    return (
-      <span className="pill">
-        <span className="pill-dot" />
-        Sample data
-      </span>
-    )
-  }
-  const time = data.updatedAt?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  const when = data.reportDate?.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  const label = data.source === 'url' ? 'Latest report' : 'Saved report'
   return (
     <span className="pill">
-      <span className="pill-dot is-live" />
-      {time ? `Live · ${time}` : 'Live'}
+      <span className={`pill-dot${data.source === 'url' ? ' is-live' : ''}`} />
+      <span className="pill-text">{when ? `${label} · ${when}` : label}</span>
     </span>
   )
 }
