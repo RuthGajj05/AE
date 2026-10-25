@@ -1,0 +1,630 @@
+{
+  "business": "Test Bakery",
+  "type": "bakery",
+  "location": "Capitol Hill, Seattle",
+  "date": "2026-10-25",
+  "advice": {
+    "snapshot": "Test Bakery averages about $1,870 per open day (roughly $42,000 a month over 22.5 open days), and weekends run about 33% above weekdays ($2,180-$2,200 vs. $1,640-$1,680). It is a morning business: 07:00-09:59 brings in 63% of revenue, and sales after 13:00 are thin. Its pastry prices sit at or below the bottom of the local range, and its signature cardamom bun sells out by about 8:30 every day. The biggest problem is that the bakery is invisible online. Searches for it show only Bakery Nouveau, The French Guys and Regent Bakery, so new customers are finding competitors first.",
+    "strengths": [
+      "Cardamom bun is a unique hit. It sells 37-44 a day and is typically gone by 08:29, and none of the 8 researched competitors sells a cardamom bun. The closest items are cinnamon rolls at Petit Pierre ($5.25), Wild Rye ($5.75) and Cinnaholic, plus Sugar's cinnamon brioche ($6.50).",
+      "Strong coffee program. Latte ($12,529) and drip ($9,195) are the #1 and #2 revenue items, together 29% of sales. The closest competitor, The French Guys (~290 m), is criticized for long waits when ordering coffee.",
+      "Broad, balanced laminated-pastry lineup. Butter croissant, almond croissant and pain au chocolat each bring in about 10% of revenue, so sales aren't dependent on a single item.",
+      "Strong weekends: Saturday averages $2,181 and Sunday $2,201."
+    ],
+    "gaps_vs_competitors": [
+      "No online presence at all: no Google, Yelp, TripAdvisor listing, website, hours or menu. Competitors have hundreds to 1,400+ reviews (Bakery Nouveau 1,463; Hello Robin 872; Cinnaholic 420).",
+      "Not in any Seattle 'best bakeries' guide. Competitors like Petit Pierre get press coverage (e.g., Seattle Magazine).",
+      "Closed Monday and Tuesday. The French Guys is open daily, Wild Rye Mon-Sat, and Nuflours weekdays from 9am, so Test Bakery customers must go elsewhere two days a week.",
+      "Closes around 15:00, while most competitors run to 4-5pm. However, this bakery's own afternoon sales are weak ($1,476 total from 14:00 across 40 days), so this gap is minor.",
+      "No kouign amann or twice-baked croissants. Bakery Nouveau, The French Guys and Petit Pierre all feature kouign amann, and Nouveau is known for its twice-baked almond croissant.",
+      "No savory sandwich offering. The French Guys sells croissant sandwiches, Petit Pierre baguette sandwiches and Sugar breakfast sandwiches; Test Bakery's only savory item is a quiche slice (15/day)."
+    ],
+    "recommendations": [
+      {
+        "title": "Trial opening on Tuesdays",
+        "category": "hours",
+        "action": "Open Tuesdays 7am-2pm for a 6-week trial, with a short menu: coffee, cardamom buns, croissants, pain au chocolat and bread. Announce it in-store and on the new Google listing. Track Tuesday revenue against the extra labor cost, and stop the trial if a Tuesday doesn't cover staffing.",
+        "evidence_from_your_business": "Closed Mon-Tue. Your slowest days (Wednesday $1,637.62, Thursday $1,645.06) still bring in over $1,600, which suggests steady weekday demand. Revenue is concentrated in 7-10am, so a short shift captures most of the day's sales.",
+        "evidence_from_market": "Bakery Nouveau (~630 m) and Petit Pierre are also closed Mon-Tue. Nuflours doesn't open until 9am on weekdays and is gluten-free only. On Tuesday mornings The French Guys (~290 m, criticized for long coffee waits) and Wild Rye (~1.3 km) are the main open options.",
+        "est_monthly_impact_usd": 2947.0,
+        "impact_math": "Baseline: Wednesday average $1,637.62. Assumption: a new day earns only 40% of that at first, because customers don't know about it yet \u2192 $655.05/day. Assumption: 4.5 Tuesdays per month (22.5 open days / 5 weekdays) \u2192 $655.05 \u00d7 4.5 \u2248 $2,948 gross revenue. This is revenue, not profit; labor and ingredient costs must come out of it. Some of it may be shifted from other days rather than new.",
+        "confidence": "low"
+      },
+      {
+        "title": "Bake more cardamom buns, especially on weekends",
+        "category": "menu",
+        "action": "Add 10 cardamom buns per day on Wed-Fri and 15 on Sat-Sun. If you're short on oven time, cut the blueberry scone batch to make room (5.9/day, 1.3% of revenue). Note the time each day the last bun sells. If they still sell out before 10:00, add another 5 the following week. Once you have more supply, consider moving the price from $5.00 to $5.25, in line with the cinnamon rolls nearby.",
+        "evidence_from_your_business": "Cardamom bun: 39.9/day, daily range only 37-44, last sale typically 08:29, flagged as likely selling out. Even on weekends, when overall revenue is about 33% higher, unit sales stay capped, so the limit is what you bake, not what customers want. Customers keep coming after it's gone: 09:00-11:59 brings in $31,409. Meanwhile the blueberry scone sells only 3-9 per day.",
+        "evidence_from_market": "No competitor sells a cardamom bun. Comparable sweet buns cost more: Petit Pierre cinnamon roll $5.25, Wild Rye $5.75, Sugar cinnamon brioche $6.50, Cinnaholic rolls $7.86+.",
+        "est_monthly_impact_usd": 562.0,
+        "impact_math": "Assumption: true demand is unknown because it sells out, so assume only 5 of the 10 extra buns sell on an average day. 5 \u00d7 $5.00 \u00d7 22.5 open days = $562.50/month. Not counted: weekend buns beyond the 10, or any price increase. Scone revenue lost if you cut the batch is not counted either; that's at most $4.00 \u00d7 5.9 \u00d7 22.5 = $531/month, and only if dropped entirely, which you shouldn't do just to make room for 10 buns.",
+        "confidence": "medium"
+      },
+      {
+        "title": "Create Google Business and Yelp listings this week",
+        "category": "marketing",
+        "action": "Claim a Google Business Profile and a Yelp page. Add the exact address, hours (Wed-Sun 7am-~3pm), a menu with prices, and photos of the cardamom bun, croissants and lattes. Put a small 'Review us on Google' card at the register. Pitch the cardamom bun, which no one else in the area sells, to CHS Blog and The Infatuation.",
+        "evidence_from_your_business": "No listings, reviews, website, menu, hours or prices found anywhere online. Searching your name returns only other bakeries.",
+        "evidence_from_market": "Customers searching find Bakery Nouveau (4.5, 1,463 reviews), The French Guys (4.4, 185) and Regent Bakery first. Even new Sugar Bakery E Pine (7 reviews) and the Petit Pierre pop-up (11 reviews) show up, while you don't.",
+        "est_monthly_impact_usd": 420.0,
+        "impact_math": "Baseline monthly revenue: $1,869.84 \u00d7 22.5 = $42,071. Assumption: listings bring a 1% lift in the first months as reviews build \u2192 $42,071 \u00d7 0.01 \u2248 $420. There's no data on search-driven traffic in your sales, so this is a placeholder. The real effect could be much larger over time.",
+        "confidence": "low"
+      },
+      {
+        "title": "Raise almond croissant to $6.25 and butter croissant to $4.50",
+        "category": "pricing",
+        "action": "Change the menu boards and POS this week: almond croissant $5.50 \u2192 $6.25 and butter croissant $4.00 \u2192 $4.50. Leave pain au chocolat at $5.00, which is already mid-range. For 4 weeks, compare units sold against your current 35.1/day (almond) and 49.5/day (butter).",
+        "evidence_from_your_business": "Almond croissant sells 35.1/day at $5.50 and lasts until about 12:18. Butter croissant sells 49.5/day at $4.00 and lasts until about 11:31. Together they bring in $15,655 (20.9% of revenue).",
+        "evidence_from_market": "Almond croissant elsewhere: The French Guys $6, Bakery Nouveau $6.75 (twice-baked), Petit Pierre $6.75, Wild Rye $6.75, Sugar $7.50. You're the cheapest of all. Butter croissant: Nouveau $3.50, Petit Pierre $4.95, Sugar $4.95, The French Guys $5.00, Wild Rye $6.25. Only Nouveau is below you. The French Guys gets 'pricey' complaints at $5, so $4.50 still positions you as the value option.",
+        "est_monthly_impact_usd": 154.0,
+        "impact_math": "Assumption: 10% fewer units at the new prices. Almond: 35.1 \u00d7 22.5 = 789.75 units \u00d7 $5.50 = $4,343.63 now, vs. 710.78 \u00d7 $6.25 = $4,442.34 (+$98.71). Butter: 49.5 \u00d7 22.5 = 1,113.75 \u00d7 $4.00 = $4,455.00 now, vs. 1,002.38 \u00d7 $4.50 = $4,510.69 (+$55.69). Total \u2248 +$154/month in revenue. Margin gain is larger because you bake fewer units. If units hold steady, the gain is about $1,149/month.",
+        "confidence": "medium"
+      },
+      {
+        "title": "Market fast morning coffee to The French Guys' crowd",
+        "category": "service",
+        "action": "During the 7-10am rush, keep a self-serve or pre-poured drip coffee station and a dedicated espresso line. Promote 'coffee in under 3 minutes' on your new Google/Yelp pages and on a sidewalk sign, ideally facing foot traffic from E Roy St.",
+        "evidence_from_your_business": "Coffee is your largest revenue category (latte $12,529 + drip $9,195 = 29%). Your busiest hours, 07:00-08:59, bring in $33,491, about 45% of all revenue.",
+        "evidence_from_market": "The French Guys, the closest competitor at ~290 m, gets complaints about 'long waits, especially when ordering coffee'. Bakery Nouveau has some 'lackluster customer service' complaints.",
+        "est_monthly_impact_usd": null,
+        "impact_math": "There's no data on how many customers could be won from The French Guys, so no estimate is given. For scale only: every 10 extra drip coffees per day = 10 \u00d7 $3.50 \u00d7 22.5 = $787.50/month.",
+        "confidence": "low"
+      }
+    ],
+    "caveats": [
+      "Sales data covers only about 8 weeks (Sept 2 - Oct 25, 40 open days), so seasonal swings such as holidays and summer aren't reflected.",
+      "Cardamom bun demand beyond the 37-44 units baked each day is unknown; the extra-batch estimate assumes only half of new buns sell.",
+      "Competitor prices come from online menus, delivery apps and Yelp pages that may be outdated or for a different location. Bakery Nouveau's are from its online pre-order shop, The French Guys' from a possibly different Yelp listing, and Sugar's likely from its Madison St store. Petit Pierre Capitol Hill may be a temporary pop-up.",
+      "No Google ratings were available. Competitor reputations are based mostly on Yelp.",
+      "All dollar estimates are revenue, not profit. Labor (especially for a Tuesday opening) and ingredient costs aren't included in the data.",
+      "Test Bakery's exact address wasn't provided, so the distances to competitors are theirs from central Capitol Hill, not from your door."
+    ]
+  },
+  "your_sales": {
+    "period": "2026-09-02 to 2026-10-25",
+    "days_with_sales": 40,
+    "open_weekdays": [
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday"
+    ],
+    "closed_weekdays": [
+      "Monday",
+      "Tuesday"
+    ],
+    "open_days_per_month": 22.5,
+    "typical_first_sale": "07:00",
+    "typical_last_sale": "14:52",
+    "total_revenue": 74793.75,
+    "avg_revenue_per_open_day": 1869.84,
+    "avg_revenue_by_weekday": {
+      "Wednesday": 1637.62,
+      "Thursday": 1645.06,
+      "Friday": 1684.19,
+      "Saturday": 2181.34,
+      "Sunday": 2201.0
+    },
+    "revenue_by_hour": {
+      "07:00": 16720.25,
+      "08:00": 16771.0,
+      "09:00": 13561.5,
+      "10:00": 10297.75,
+      "11:00": 7549.5,
+      "12:00": 5340.75,
+      "13:00": 3077.0,
+      "14:00": 1476.0
+    },
+    "items": [
+      {
+        "item": "Latte",
+        "category": "Drinks",
+        "avg_price": 5.5,
+        "units": 2278,
+        "revenue": 12529.0,
+        "revenue_share_pct": 16.8,
+        "avg_units_per_open_day": 57.0,
+        "typical_last_sale": "12:36",
+        "daily_units_min_max": [
+          37,
+          90
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Drip Coffee",
+        "category": "Drinks",
+        "avg_price": 3.5,
+        "units": 2627,
+        "revenue": 9194.5,
+        "revenue_share_pct": 12.3,
+        "avg_units_per_open_day": 65.7,
+        "typical_last_sale": "11:38",
+        "daily_units_min_max": [
+          38,
+          96
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Cardamom Bun",
+        "category": "Pastry",
+        "avg_price": 5.0,
+        "units": 1596,
+        "revenue": 7980.0,
+        "revenue_share_pct": 10.7,
+        "avg_units_per_open_day": 39.9,
+        "typical_last_sale": "08:29",
+        "daily_units_min_max": [
+          37,
+          44
+        ],
+        "likely_sells_out": true
+      },
+      {
+        "item": "Butter Croissant",
+        "category": "Pastry",
+        "avg_price": 4.0,
+        "units": 1982,
+        "revenue": 7928.0,
+        "revenue_share_pct": 10.6,
+        "avg_units_per_open_day": 49.5,
+        "typical_last_sale": "11:31",
+        "daily_units_min_max": [
+          27,
+          72
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Almond Croissant",
+        "category": "Pastry",
+        "avg_price": 5.5,
+        "units": 1405,
+        "revenue": 7727.5,
+        "revenue_share_pct": 10.3,
+        "avg_units_per_open_day": 35.1,
+        "typical_last_sale": "12:18",
+        "daily_units_min_max": [
+          18,
+          53
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Pain au Chocolat",
+        "category": "Pastry",
+        "avg_price": 5.0,
+        "units": 1509,
+        "revenue": 7545.0,
+        "revenue_share_pct": 10.1,
+        "avg_units_per_open_day": 37.7,
+        "typical_last_sale": "11:27",
+        "daily_units_min_max": [
+          23,
+          54
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Sourdough Loaf",
+        "category": "Bread",
+        "avg_price": 9.0,
+        "units": 731,
+        "revenue": 6579.0,
+        "revenue_share_pct": 8.8,
+        "avg_units_per_open_day": 18.3,
+        "typical_last_sale": "13:30",
+        "daily_units_min_max": [
+          11,
+          26
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Quiche Slice",
+        "category": "Savory",
+        "avg_price": 8.5,
+        "units": 600,
+        "revenue": 5100.0,
+        "revenue_share_pct": 6.8,
+        "avg_units_per_open_day": 15.0,
+        "typical_last_sale": "14:16",
+        "daily_units_min_max": [
+          10,
+          21
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Baguette",
+        "category": "Bread",
+        "avg_price": 4.5,
+        "units": 897,
+        "revenue": 4036.5,
+        "revenue_share_pct": 5.4,
+        "avg_units_per_open_day": 22.4,
+        "typical_last_sale": "14:22",
+        "daily_units_min_max": [
+          13,
+          34
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Chocolate Chip Cookie",
+        "category": "Cookies",
+        "avg_price": 3.25,
+        "units": 1111,
+        "revenue": 3610.75,
+        "revenue_share_pct": 4.8,
+        "avg_units_per_open_day": 27.8,
+        "typical_last_sale": "14:50",
+        "daily_units_min_max": [
+          19,
+          43
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Gluten-Free Muffin",
+        "category": "Pastry",
+        "avg_price": 4.5,
+        "units": 359,
+        "revenue": 1615.5,
+        "revenue_share_pct": 2.2,
+        "avg_units_per_open_day": 9.0,
+        "typical_last_sale": "12:25",
+        "daily_units_min_max": [
+          6,
+          13
+        ],
+        "likely_sells_out": false
+      },
+      {
+        "item": "Blueberry Scone",
+        "category": "Pastry",
+        "avg_price": 4.0,
+        "units": 237,
+        "revenue": 948.0,
+        "revenue_share_pct": 1.3,
+        "avg_units_per_open_day": 5.9,
+        "typical_last_sale": "11:53",
+        "daily_units_min_max": [
+          3,
+          9
+        ],
+        "likely_sells_out": false
+      }
+    ]
+  },
+  "your_online_presence": {
+    "found_online": false,
+    "rating": null,
+    "review_count": null,
+    "praised_for": [],
+    "complaints": [],
+    "online_menu_and_prices": [],
+    "online_hours": null,
+    "presence_gaps": [
+      "Searching 'Test Bakery' with Capitol Hill, Seattle turned up no matching business",
+      "No Yelp listing found",
+      "No TripAdvisor listing found",
+      "No Google Maps/Business listing found",
+      "No website found",
+      "No reviews found",
+      "No menu, prices or hours found online",
+      "Searches show only other Capitol Hill bakeries (Bakery Nouveau, The French Guys, Regent Bakery & Cafe), so these are the competitors customers find first",
+      "Not in any Seattle 'best bakeries' guides found (Eater, The Infatuation, Female Foodie, Feastio)"
+    ],
+    "sources": []
+  },
+  "competitors": {
+    "business": "Test Bakery",
+    "type": "bakery",
+    "location": "Capitol Hill, Seattle",
+    "date": "2026-10-25",
+    "competitors": [
+      {
+        "name": "Bakery Nouveau (Capitol Hill)",
+        "address": "137 15th Ave E, Seattle, WA 98112",
+        "distance_note": "~630 m (OSM)",
+        "hours": "We-Su 7am-5pm, closed Mon-Tue",
+        "website": "https://www.bakerynouveau.com/",
+        "rating": 4.5,
+        "review_count": 1463,
+        "specialties": [
+          "Twice baked almond croissant",
+          "Twice baked chocolate croissant",
+          "Kouign amann",
+          "Cakes and tarts",
+          "Bean-to-bar chocolates, macarons",
+          "Artisan sourdough breads"
+        ],
+        "praised_for": [
+          "Double/twice baked almond croissants",
+          "Rich chocolate cake",
+          "Large pastries, good value for size",
+          "Friendly staff, fresh pastries",
+          "Large, beautiful interior"
+        ],
+        "complaints": [
+          "Lackluster customer service (some reviews)"
+        ],
+        "price_points": [
+          "Butter croissant: $3.50",
+          "Chocolate croissant: $4.75",
+          "Twice baked almond croissant: $6.75",
+          "Twice baked chocolate croissant: $7.25"
+        ],
+        "sources": [
+          "https://m.yelp.com/biz/bakery-nouveau-seattle-3?start=560",
+          "https://bakerynouveau.com/product/butter-croissant",
+          "https://bakerynouveau.com/our-creations/breakfast-pastries/"
+        ]
+      },
+      {
+        "name": "The French Guys",
+        "address": "810 E Roy St, Seattle, WA 98102",
+        "distance_note": "~290 m (closest)",
+        "hours": "Daily 7am-4pm (OSM); an Instagram post says 7am-5pm",
+        "website": "https://www.thefrenchguys.com",
+        "rating": 4.4,
+        "review_count": 185,
+        "specialties": [
+          "Croissants (plain, almond, raspberry, hazelnut)",
+          "Canel\u00e9s",
+          "Baguettes and breads",
+          "Croissant sandwiches",
+          "Also sells at farmers markets and wholesale"
+        ],
+        "praised_for": [
+          "Croissants",
+          "Lemon tart",
+          "Polite staff",
+          "Parisian ambiance, cottage-like building, terrace seating"
+        ],
+        "complaints": [
+          "Long waits, especially when ordering coffee",
+          "Some pastries dry/hollow (pain suisse)",
+          "Pricey (a croissant costs at least $5)"
+        ],
+        "price_points": [
+          "Croissant: $5.00 (Yelp menu)",
+          "Pain au chocolat: $5.00 (Yelp menu)",
+          "Kouign-amann: $6.00 (Yelp menu)",
+          "Baguette: $4.00 (Yelp menu)",
+          "Sourdough: $12.00 (Yelp menu)",
+          "Almond croissant: $6 (Yelp review)"
+        ],
+        "sources": [
+          "https://www.yelp.com/biz/the-french-guys-seattle",
+          "https://www.yelp.com/menu/the-french-guys-seattle-4",
+          "https://www.tripadvisor.com/Restaurant_Review-g60878-d27481834-Reviews-The_French_Guys-Seattle_Washington.html"
+        ]
+      },
+      {
+        "name": "Nuflours Bakery",
+        "address": "518 15th Ave E, Seattle, WA 98112",
+        "distance_note": "~450 m",
+        "hours": "Mo-Fr 9am-5pm; Sa-Su 8:30am-5pm (OSM)",
+        "website": "https://nuflours.com/",
+        "rating": 4.3,
+        "review_count": 275,
+        "specialties": [
+          "100% gluten-free (also peanut- and rice-free)",
+          "Vegan/dairy-free options",
+          "Custom cakes",
+          "Pies, breads, cupcakes"
+        ],
+        "praised_for": [
+          "Celiac-safe, everything is gluten-free",
+          "Flaky crusts and good fillings",
+          "Cozy, hip interior"
+        ],
+        "complaints": [
+          "Poor customer service (some reviews)",
+          "Limited vegan options"
+        ],
+        "price_points": [
+          "Baguette: $7.15",
+          "Cheese danish: $5.78",
+          "Cake slice: $8.50",
+          "Flax sandwich bread: $12.65",
+          "9-inch pie: $38.50",
+          "Cupcakes 6-pack: $36.30",
+          "Custom cake: from $53.90"
+        ],
+        "sources": [
+          "https://www.yelp.com/biz/nuflours-seattle",
+          "https://nuflours.com/collections/all",
+          "https://www.tripadvisor.com/Restaurant_Review-g60878-d4837619-Reviews-Nuflours-Seattle_Washington.html"
+        ]
+      },
+      {
+        "name": "Hello Robin",
+        "address": "522 19th Ave E, Seattle, WA 98112",
+        "distance_note": "East Capitol Hill (distance not in OSM)",
+        "hours": "Mon-Tue 11am-9pm (Yelp); delivery apps show Su-Th 11am-8:30pm, F-Sa 11am-9:45pm",
+        "website": null,
+        "rating": 4.5,
+        "review_count": 872,
+        "specialties": [
+          "Cookies (Mackles'more s'mores cookie, chocolate chip, snickerdoodle)",
+          "Ice cream sandwiches with Molly Moon's",
+          "Bake-at-home cookie dough",
+          "Espresso bar"
+        ],
+        "praised_for": [
+          "Best cookies in Seattle",
+          "Fresh, warm cookies",
+          "Friendly service"
+        ],
+        "complaints": [
+          "Costly, smallish cookies (Bellevue branch review)"
+        ],
+        "price_points": [
+          "Mixed cookie box: $16.75 (Uber Eats/Postmates delivery price)",
+          "1/2 dozen S'more cookies: $19.90 (delivery app)",
+          "Bake-at-home dough, dozen: $17.00 (delivery app); $18-21 (Seattle Met)"
+        ],
+        "sources": [
+          "https://www.yelp.com/biz/hello-robin-seattle",
+          "https://postmates.com/store/hello-robin/IB-pN3NmRG6Wgxrat-eCLg",
+          "https://www.tripadvisor.com/Restaurant_Review-g60878-d4854990-Reviews-Hello_Robin-Seattle_Washington.html"
+        ]
+      },
+      {
+        "name": "Petit Pierre Bakery (Capitol Hill, inside M\u00e9tier bike shop)",
+        "address": "1017 E Union St, Seattle, WA 98122",
+        "distance_note": "~1.1 mi from Capitol Hill center (Yelp)",
+        "hours": "Wed from 8am-4pm; closed Mon-Tue (Yelp, other days not shown)",
+        "website": "https://www.petitpierrebakery.com",
+        "rating": 4.5,
+        "review_count": 11,
+        "specialties": [
+          "French laminated pastries",
+          "Kouign amann",
+          "Pistachio pain au chocolat",
+          "Baguette sandwiches"
+        ],
+        "praised_for": [
+          "Flavorful pastries and croissants (praise for the brand overall)",
+          "Wide pastry selection"
+        ],
+        "complaints": [],
+        "price_points": [
+          "Butter croissant: $4.95",
+          "Pain au chocolat: $6.00",
+          "Almond croissant: $6.75",
+          "Kouign amann: $6.25",
+          "Cinnamon roll: $5.25",
+          "Blueberry scone: $4.75",
+          "Cookies: $3.50/$4.00"
+        ],
+        "sources": [
+          "https://www.yelp.com/biz/petit-pierre-bakery-seattle-4",
+          "https://www.petitpierrebakery.com/metier-menu",
+          "https://seattlemag.com/food-drink/best-bakery-petit-pierre"
+        ]
+      },
+      {
+        "name": "Cinnaholic",
+        "address": "816 E Pike St, Seattle, WA 98122",
+        "distance_note": "~1.1 km (Pike/Pine)",
+        "hours": "Daily 8:30am-11pm (OSM); Uber Eats shows 10:30am-11pm",
+        "website": "https://locations.cinnaholic.com/ll/us/wa/seattle/31/",
+        "rating": 3.9,
+        "review_count": 420,
+        "specialties": [
+          "Vegan, build-your-own cinnamon rolls",
+          "Edible cookie dough, brownies",
+          "Open late"
+        ],
+        "praised_for": [
+          "Soft, fluffy rolls",
+          "Customizable frostings and toppings",
+          "Nice, helpful staff"
+        ],
+        "complaints": [
+          "Pricey (about $18 for two rolls)",
+          "Made-to-order, so it takes a while",
+          "Little seating"
+        ],
+        "price_points": [
+          "Old Skool roll: $9.08 (Yelp/Grubhub, may be delivery price)",
+          "Signature rolls: $15.12 (Grubhub delivery price)",
+          "Plain roll: $7.86 (Grubhub)",
+          "Buns from $5.50 (older TripAdvisor review)"
+        ],
+        "sources": [
+          "https://www.yelp.com/biz/cinnaholic-seattle",
+          "https://www.grubhub.com/food/cinnaholic/menu",
+          "https://www.tripadvisor.com/Restaurant_Review-g60878-d15287264-Reviews-Cinnaholic-Seattle_Washington.html"
+        ]
+      },
+      {
+        "name": "Sugar Bakery (Capitol Hill - E Pine)",
+        "address": "320 E Pine St Suite 101, Seattle, WA 98122",
+        "distance_note": "~0.5 mi from Pine St area (Yelp)",
+        "hours": null,
+        "website": "http://sugarbakerycafe.com",
+        "rating": 3.9,
+        "review_count": 7,
+        "specialties": [
+          "Croissants (salted caramel, almond)",
+          "Jam scones",
+          "Cakes",
+          "Breakfast sandwiches"
+        ],
+        "praised_for": [
+          "Jam scones and croissants (chain-wide)",
+          "Spacious interior"
+        ],
+        "complaints": [
+          "Croissant 'nothing special'",
+          "Pastries a little dry",
+          "Pastries reheated in ovens (one review)"
+        ],
+        "price_points": [
+          "Butter croissant: $4.95 (Square site, likely Madison St location)",
+          "Chocolate croissant: $5.95 (Square)",
+          "Almond croissant: $7.50 (Square)",
+          "Jam scone: $5.50 (Square)",
+          "Cinnamon brioche: $6.50 (Square)"
+        ],
+        "sources": [
+          "https://m.yelp.com/biz/sugar-bakery-seattle",
+          "https://sugar-bakery-1014.square.site",
+          "https://www.facebook.com/p/Sugar-Bakery-Capitol-Hill-E-Pine-61579554836480"
+        ]
+      },
+      {
+        "name": "Wild Rye Bakery",
+        "address": "1017 Olive Way, Seattle, WA 98101",
+        "distance_note": "~1.3 km (Olive & Boren, edge of downtown)",
+        "hours": "Mon-Sat 6:30am-2:30pm",
+        "website": "https://www.wildryebakery.com/",
+        "rating": 4.0,
+        "review_count": 24,
+        "specialties": [
+          "Croissants made with local Cairnspring Mills flour",
+          "Sourdough rye",
+          "Supplies Seattle Convention Center events"
+        ],
+        "praised_for": [
+          "Delicious pastries",
+          "Reasonably priced"
+        ],
+        "complaints": [],
+        "price_points": [
+          "Butter croissant: $6.25",
+          "Almond croissant: $6.75",
+          "Pain au chocolat: $6.75",
+          "Cinnamon roll: $5.75",
+          "Chocolate chip cookie: $3.75",
+          "Scone: $7.25",
+          "Baguette: $6.50",
+          "Sourdough rye boule: $8.75"
+        ],
+        "sources": [
+          "https://www.wildryebakery.com/the-menu",
+          "https://www.yelp.com/biz/wild-rye-seattle"
+        ]
+      }
+    ],
+    "gaps_and_caveats": [
+      "Crumble & Flake (1500 E Olive Way) was left out: Eater Seattle and CHS Blog report it left Capitol Hill in Nov 2023 and moved to Issaquah.",
+      "Bakery Nouveau prices come from its online pre-order shop, which serves all 3 locations. In-store Capitol Hill prices weren't confirmed. The TripAdvisor 4.7 (118 reviews) lists a different address (1435 E John St), so it was not used.",
+      "The French Guys prices come from a Yelp menu page for listing 'the-french-guys-seattle-4', which may be a different listing than the Roy St storefront and may be out of date. The official Capitol Hill menu is a PDF that wasn't read. The Toast ordering page wouldn't load.",
+      "Hello Robin: the only prices found were delivery-app prices (Uber Eats/Postmates) for boxes. No in-store single-cookie price was found for the Capitol Hill shop; a Bellevue-branch review mentions $2.65/cookie, which may be outdated. The Yelp 150-review listing (hello-robin-seattle-2) is probably the U-Village branch.",
+      "Petit Pierre Capitol Hill is described as a six-month pop-up (Seattle Magazine), so it may be temporary. The Yelp 4.5 (281 reviews) belongs to another branch; the Capitol Hill listing has only 11 reviews. Hours were only partly visible.",
+      "Cinnaholic prices are from Grubhub/Yelp listings and may include delivery markup. No official in-store price was found.",
+      "Sugar Bakery E Pine looks new (only 6-7 Yelp reviews). The 4.3 (422 reviews) rating and the Square menu prices likely belong to the 1014 Madison St location.",
+      "Wild Rye is closer to downtown than to central Capitol Hill.",
+      "Other OSM-listed shops not researched: Rubinstein Bagels (Eastlake), Grand Central Bakery Eastlake, Piroshky (9th Ave), Mt. Bagel (26th Ave E). Macrina and Le Panier appear on Yelp's Capitol Hill lists but have no Capitol Hill location in the results.",
+      "No ratings/reviews from Google were available. Ratings are from Yelp unless noted."
+    ]
+  }
+}
