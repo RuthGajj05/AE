@@ -33,12 +33,15 @@ export function useSnapSheet(snap, setSnap) {
   const dragged = useRef(false)
 
   function onPointerDown(e) {
-    if (e.button !== 0) return
-    drag.current = { startY: e.clientY, startH: heights[snap], lastY: e.clientY, lastT: e.timeStamp, velocity: 0 }
+    // One finger drives the sheet: a second finger isn't the primary pointer, so it can't take over the drag.
+    if (e.button !== 0 || !e.isPrimary) return
+    // A new primary pointer means the last drag never got its pointerup; drop its listeners.
+    drag.current?.stop()
     dragged.current = false
 
     const onMove = (ev) => {
       const d = drag.current
+      if (!d || ev.pointerId !== d.pointerId) return
       const dy = d.startY - ev.clientY
       if (Math.abs(dy) > 5) dragged.current = true
       if (!dragged.current) return
@@ -48,18 +51,24 @@ export function useSnapSheet(snap, setSnap) {
       setDragHeight(Math.max(heights.peek * 0.7, Math.min(d.startH + dy, heights.full + 24)))
     }
     const onUp = (ev) => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
       const d = drag.current
+      if (d && ev.pointerId !== d.pointerId) return
+      stop()
       drag.current = null
       setDragHeight(null)
-      if (!dragged.current) return
+      if (!d || !dragged.current) return
       // Project ~180ms ahead so a flick goes to the next snap point.
       const target = d.startH + (d.startY - ev.clientY) + d.velocity * 180
       const nearest = Object.keys(heights).reduce((a, b) => (Math.abs(heights[b] - target) < Math.abs(heights[a] - target) ? b : a))
       setSnap(nearest)
     }
+    const stop = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+    }
+
+    drag.current = { pointerId: e.pointerId, startY: e.clientY, startH: heights[snap], lastY: e.clientY, lastT: e.timeStamp, velocity: 0, stop }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)

@@ -71,7 +71,7 @@ export function FoodSheet({ cuisine, view, onView, sort, onSort, spotId, onOpenS
 
       <div className="food-body" ref={body}>
         {spot ? (
-          <GoHere spot={spot} cuisine={cuisine} />
+          <GoHere key={spot.id} spot={spot} cuisine={cuisine} />
         ) : view === 'list' ? (
           <SpotList cuisine={cuisine} sort={sort} onSort={onSort} onOpenSpot={onOpenSpot} />
         ) : (

@@ -1,6 +1,7 @@
 {
   "note": "Sample data for the business side (the You tab). 'you' is a made-up sushi shop compared against the 4 sample sushi spots. Picks are crumbs users who compared spots, then tapped Go here. Later the backend sends this from real pick events.",
   "period": "last 7 days",
+  "periodDays": 7,
   "area": "Capitol Hill",
   "you": {
     "id": "biz-tamago",

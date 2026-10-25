@@ -10,8 +10,9 @@ import { AMBIANCE } from './metrics.js'
 export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
 // Backend base URL. VITE_API_URL (e.g. http://localhost:8000) talks to the backend directly; empty → relative /api,
-// which the Vite dev server proxies to the backend on the machine running it, so anyone opening the page through a
-// tunnel reaches that backend too. Either way, paths below start after /api.
+// which the Vite dev server proxies to the backend on the machine running it. Through a tunnel that proxy answers 403
+// (sample data) unless the dev server runs with SHARE_API=1; see vite.config.js. Either way, paths below start after
+// /api.
 const API_ROOT = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '').replace(/\/api$/, '')
 export const API_BASE = `${API_ROOT}/api`
 

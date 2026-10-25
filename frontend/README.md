@@ -28,6 +28,9 @@ cp .env.example .env.local   # then paste your key after VITE_GOOGLE_MAPS_API_KE
   pick (localStorage for now).
 - **You** tab is the business side: **Rivals** (picks lost and why) and **Insights** (breakdown vs the area), from
   `src/crumbs/data/business.json` plus this browser's picks.
+- **Sharing the dev server** (tunnel link or local network): pages load for anyone, but `/api` only answers on this
+  laptop, so shared viewers see sample data and can't spend the backend's API credits. To let them reach the backend
+  on purpose, start the dev server with `SHARE_API=1 npm run dev`.
 
 ## LocalEdge
 

@@ -33,7 +33,8 @@ async function geocode(address) {
 }
 
 /** "1435 E John St # 137, Seattle" → "1435 E John St, Seattle": unit numbers often trip the geocoder. */
-const withoutUnit = (a) => a.replace(/\s*(#|suite|ste\.?|unit|apt\.?)\s*[\w-]+/gi, '').replace(/\s+,/g, ',')
+// Whole words only, so street names like "Stewart St" or "Westlake Ave" survive.
+const withoutUnit = (a) => a.replace(/\s*(?:#\s*|\b(?:suite|ste|unit|apt)\b\.?\s*)[\w-]+/gi, '').replace(/\s+,/g, ',')
 
 const report = JSON.parse(readFileSync(input, 'utf8'))
 const competitors = Array.isArray(report.competitors) ? report.competitors : []

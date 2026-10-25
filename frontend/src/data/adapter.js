@@ -265,7 +265,17 @@ export function toDashboard(raw, { source = 'url' } = {}) {
   // A bare array is a list of competitors; a backend wrapper ({ profile, report }) is unwrapped.
   let root = Array.isArray(raw) ? { competitors: raw } : isObject(raw) ? raw : {}
   const wrapped = pick(root, 'report')
-  if (isObject(wrapped)) root = { business: pick(root, 'profile', 'business'), ...wrapped }
+  if (isObject(wrapped)) {
+    // The profile holds the owner's own numbers; Ruth's report only names the business, so the profile wins and
+    // borrows that name when it has none.
+    const profile = pick(root, 'profile', 'business')
+    const reported = pick(wrapped, 'business')
+    let business = profile ?? reported
+    if (isObject(profile) && pick(profile, 'name', 'businessName', 'title') === undefined && typeof reported === 'string') {
+      business = { ...profile, name: reported }
+    }
+    root = { ...wrapped, business }
+  }
 
   const competitors = list(pick(root, 'competitors', 'nearby', 'nearbyBusinesses', 'businesses', 'results', 'places'))
     .map(toCompetitor)

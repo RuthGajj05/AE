@@ -9,9 +9,17 @@ const average = (values) => values.reduce((sum, v) => sum + v, 0) / values.lengt
 export function buildBusinessReport(data, cuisine, picks) {
   const { you } = data
 
-  // This browser's Go-here taps for the same food type count as picks lost: in the demo, "you" was in every
-  // comparison but the user chose someone else.
-  const localPicks = picks.filter((p) => p.cuisine === you.cuisine)
+  // This browser's Go-here taps for the same food type in the report's window count as picks lost: in the demo,
+  // "you" was in every comparison but the user chose someone else. Malformed stored entries are skipped.
+  const since = Date.now() - (data.periodDays ?? 7) * 24 * 60 * 60 * 1000
+  const localPicks = picks.filter(
+    (p) =>
+      p !== null &&
+      typeof p === 'object' &&
+      p.cuisine === you.cuisine &&
+      typeof p.chosenSpotId === 'string' &&
+      Date.parse(p.timestamp) >= since,
+  )
   const lostTo = { ...data.picksLostTo }
   for (const p of localPicks) lostTo[p.chosenSpotId] = (lostTo[p.chosenSpotId] ?? 0) + 1
   const picksLost = Object.values(lostTo).reduce((sum, n) => sum + n, 0)
