@@ -166,6 +166,14 @@ Then schedule:
 .venv/bin/python agent/monitor.py --deliver   # hourly: send texts/emails at each owner's notify hour
 ```
 
+To make an advisor report for a business stored in Supabase, so the owner can look back on it in the app:
+
+```sh
+.venv/bin/python agent/advisor.py --business-id UUID --sales square
+```
+
+It uses the business's stored name, type, location and website, saves the report to `advisor_reports` (and to `reports/` as usual), and prints the new row id. From Python, call `advisor.run_for_business(business_id, sales_source)`. In the app, list past reports newest first with `select=id,created_at,advice->>snapshot,sales_summary->>is_synthetic&order=created_at.desc` and load the full `advice` when one is opened. `sales_summary.is_synthetic` marks demo reports.
+
 Each check adds the alert to the in-app feed right away and queues a text/email for the owner's `notify_hour` (default 2pm local). The baseline uses the default multi-agent research; repeat checks re-research the same tracked competitors with the single-agent collector, which is the one that accepts a fixed list.
 
 ## Run competitor and product research
