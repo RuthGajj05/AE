@@ -185,6 +185,7 @@ def test_top_rated_alert_from_a_rescore(client, monkeypatch):
 
 
 def test_ruths_monitor_runs_through_the_sqlite_adapter(client, monkeypatch):
+    monkeypatch.setattr(alerts, "supabase_configured", lambda: False)  # this test covers the SQLite path, whatever .env holds
     monitor = alerts._monitor_module()
     business_id = store.create_business(name="Kaito Sushi", business_type="sushi", location="Capitol Hill, Seattle",
                                         address="100 Broadway E, Seattle, WA", lat=47.6195, lng=-122.3205)
