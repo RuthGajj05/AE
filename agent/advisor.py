@@ -53,11 +53,16 @@ ADVISOR_SYSTEM = """You advise the owner of a small, brick-and-mortar business. 
 - Dollar estimates must be conservative and use only numbers in the inputs (units per day, prices, open days per month). Show the math and label assumptions, e.g. "assume 10% fewer units after a price increase". If a recommendation can't be grounded in numbers (e.g. a new opening day), you may estimate from the owner's average revenue per day with a clearly labeled discount, or leave the estimate null. Never present an estimate as certain.
 - Remember sales data only shows what sold, not what customers wanted: a sold-out item's true demand is unknown, so size estimates for it cautiously.
 - Not finding something online (e.g. a Google listing) is not evidence that it doesn't exist. Recommend checking it, not creating it, unless the research positively shows it's missing.
-- The sales data may be a sample; treat it as the owner's real data."""
+- The sales data may be a sample; treat it as the owner's real data.
+- If <own_sales_analysis> says no sales data was provided, base the advice on the competitor research and the online presence only: leave est_monthly_impact_usd null and say in impact_math that there is no sales data to size it, and mention in the caveats that sales data would sharpen the advice."""
+
+NO_SALES = {"items": [], "note": "No sales data was provided."}
 
 
-def load_sales(source: str, days: int) -> dict:
-    """`source` is "square", "toast", or the path to a sales CSV export."""
+def load_sales(source: str | None, days: int) -> dict:
+    """`source` is "square", "toast", the path to a sales CSV export, or None for no sales data."""
+    if source is None:
+        return NO_SALES
     if source == "square":
         return business_agent.analyze_rows(pos.fetch_square(days))
     if source == "toast":
@@ -66,7 +71,7 @@ def load_sales(source: str, days: int) -> dict:
 
 
 def run(
-    business: str, business_type: str, location: str, sales_source: str,
+    business: str, business_type: str, location: str, sales_source: str | None,
     website: str | None = None, days: int = 56, fast: bool = False,
 ) -> dict:
     start = time.monotonic()
@@ -134,8 +139,8 @@ def main() -> None:
     parser.add_argument("business_type", help="e.g. bakery, dog groomer, cafe")
     parser.add_argument("location", help="Neighborhood and city, e.g. 'Ballard, Seattle'")
     parser.add_argument(
-        "--sales", required=True,
-        help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export",
+        "--sales",
+        help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export. Optional: without it the advice rests on the competitor research alone",
     )
     parser.add_argument("--days", type=int, default=56, help="Days of POS sales to pull (default 56)")
     parser.add_argument("--website", help="The business's website, if it has one")
