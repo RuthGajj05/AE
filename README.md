@@ -1,59 +1,64 @@
 # AE
 
-Python research and advice for small, brick-and-mortar businesses. The pipeline discovers competitors, then runs independent agents for different source websites while researching the owner's online presence and computing sales statistics. Product analysis adds menu-gap checks and dated review comparisons before recommendations are written.
+Python research and advice for small, brick-and-mortar businesses, running on Claude Sonnet 5.5. The **advisor** analyzes the owner's sales (optional), researches up to 8 nearby competitors in parallel and the owner's own online presence, finds product gaps, and writes tailored recommendations in under a minute; it can save the report to Supabase and email it. The **monitor** re-checks each business's competitors three times a week on GitHub Actions and alerts the owner to real changes.
 
 ```mermaid
 flowchart LR
-  IN["Owner input<br/>name · type · location · optional menu"]
-  SRC{"Sales source"}
-  CSV["CSV export"]
-  SQ["Square API"]
-  TS["Toast API"]
+  IN["Owner input<br/>or business from Supabase"]
+  API["Report-by-email API"]
 
-  subgraph PAR["Run at the same time"]
+  subgraph SALES_IN["Sales data (optional)"]
     direction TB
-    subgraph C["Competitor research"]
-      direction TB
-      DISC["Bounded discovery<br/>nearby branches and official websites"]
-      subgraph SPECIALISTS["Independent source agents · default 3 concurrent"]
-        OFF["Official menus"]
-        ORD["Public ordering prices"]
-        YELP["Yelp search snippets"]
-        TRIP["TripAdvisor search snippets"]
-        GOOGLE["Google listings / Places sample"]
-      end
-      MERGE["Wait for results<br/>deterministic factual merge"]
-      DISC --> OFF & ORD & YELP & TRIP & GOOGLE
-      OFF & ORD & YELP & TRIP & GOOGLE --> MERGE
-    end
-    PRES["Your own listings,<br/>reviews, menu, hours"]
-    subgraph SALES["Sales analysis"]
-      ROWS["Same item-level rows for every source"]
-      MET["Revenue by item, day, hour<br/>transaction patterns to validate"]
-      ROWS --> MET
-    end
+    CSV["CSV export"]
+    SQ["Square API"]
+    TS["Toast API"]
   end
 
-  MI["Deterministic product analysis<br/>menu gaps · dated review trends"]
-  ADV["Advisor<br/>tailored actions<br/>labeled financial scenarios"]
-  OUT["Unique JSON reports<br/>under reports/"]
+  subgraph ADV["Advisor · under a minute"]
+    direction TB
+    SA["Sales analysis"]
+    subgraph PAR["At the same time"]
+      direction TB
+      FC["Competitor research<br/>1 agent per shop, up to 8<br/>+ verified menu items"]
+      PR["Your online presence"]
+    end
+    MI["Product gaps (2+ shops)<br/>review trends"]
+    AD["Tailored advice"]
+    SA --> FC
+    SA --> AD
+    FC --> MI --> AD
+    PR --> AD
+  end
 
-  IN --> DISC
-  IN --> PRES
-  IN --> SRC
-  IN -.->|Owner menu| MI
-  SRC --> CSV --> ROWS
-  SRC --> SQ --> ROWS
-  SRC --> TS --> ROWS
-  MERGE --> MI
-  MET --> MI
-  MI --> ADV
-  PRES --> ADV
-  MET --> ADV
-  ADV --> OUT
+  subgraph MON["Monitor"]
+    direction TB
+    RE["Re-check tracked competitors<br/>+ openings / closures"]
+    DIFF["Compare with last snapshot"]
+    RE --> DIFF
+  end
+
+  GHA["GitHub Actions<br/>Mon/Wed/Fri · hourly delivery"]
+  SB[("Supabase<br/>businesses · snapshots · changes<br/>notifications · advisor_reports")]
+  OUT["reports/ JSON"]
+  MAIL["Report email"]
+  ALERT["Alert email / text"]
+  APP["App: feed · settings<br/>past reports"]
+
+  IN --> SA
+  API --> SA
+  CSV --> SA
+  SQ --> SA
+  TS --> SA
+  AD --> OUT
+  AD --> SB
+  AD --> MAIL
+  GHA --> MON
+  DIFF --> SB
+  SB --> ALERT
+  SB --> APP
 ```
 
-This repository provides Python functions, command-line tools, and JSON reports for your team's application. It does not implement a frontend or HTTP API. See [the backend integration contract](docs/backend-integration.md) for imports, report fields, and replaying evidence.
+This repository is the Python backend: functions, command-line tools, a small report-by-email API (`agent/api.py`), the Supabase schema, and the scheduled monitor. The app frontend lives elsewhere. See [the backend integration contract](docs/backend-integration.md) and [frontend integration](docs/frontend-integration.md).
 
 ## Setup
 
