@@ -10,4 +10,10 @@ export default defineConfig({
     // Same-origin backend: the browser calls /api, Vite forwards it to the backend on this machine.
     proxy: { '/api': 'http://localhost:8000' },
   },
+  build: {
+    rollupOptions: {
+      // crumbs is the main app; the LocalEdge dashboard lives at /localedge.html
+      input: { main: 'index.html', localedge: 'localedge.html' },
+    },
+  },
 })
