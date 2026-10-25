@@ -144,7 +144,6 @@ export function AlertsScreen({ feed, onOpen }) {
 
       {feed.isSample && !feed.loading && (
         <p className="alerts-sample">
-          <span className="sample-tag">sample data</span>
         </p>
       )}
 
