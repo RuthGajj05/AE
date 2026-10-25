@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 
 import config
 import cuisines
+import emails
 import geo
 import scoring
 import square_inventory
@@ -206,18 +207,24 @@ class MonitorStore:
         store.save_changes(business["id"], changes, run_id=run_id, snapshot_id=snapshot_id, previous_snapshot_id=previous_snapshot_id)
 
     def queue_notifications(self, business: dict, title: str, message: str, run_id) -> None:
-        pass  # in SQLite mode each change is already an alert; texts/emails are Ruth's Supabase path
+        # Each change is already an in-app alert (from the changes table); this emails the owner the summary.
+        emails.send_alert(business["id"], title, message)
+
+
+def uses_supabase(business: dict | None) -> bool:
+    """A business linked to Ruth's Supabase project keeps its monitor data there; every other one (including all
+    businesses onboarded in the app) uses SQLite, even when Supabase is configured."""
+    return bool(business and business.get("supabase_business_id")) and supabase_configured()
 
 
 def run_monitor(business_id: str) -> dict:
-    """Run Ruth's monitor for one crumbs business. The first run saves a baseline."""
+    """Run Ruth's monitor for one crumbs business. The first run saves a baseline; later runs record changes as
+    alerts and email the owner a summary."""
     b = store.get_business(business_id)
     if not b:
         raise ValueError("No such business.")
     monitor = _monitor_module()
-    if supabase_configured():
-        if not b.get("supabase_business_id"):
-            raise ValueError("Supabase is on, but this business isn't linked to a Supabase business id yet.")
+    if uses_supabase(b):
         sb = monitor.SupabaseStore()
         report = monitor.check(sb.get_business(b["supabase_business_id"]), sb)
     else:
@@ -227,19 +234,28 @@ def run_monitor(business_id: str) -> dict:
     return {"baseline": report is None, "changes": len(report.changes) if report else 0}
 
 
+def _supabase_changes(business: dict | None, *, public_only: bool, since: str) -> list[dict]:
+    params = {"created_at": f"gte.{since}", "order": "created_at.desc", "limit": 100, "select": "*"}
+    if business is not None:
+        params["business_id"] = f"eq.{business['supabase_business_id']}"
+    if public_only:
+        params["kind"] = f"in.({','.join(PUBLIC_CHANGES)})"
+    try:
+        return _supabase()._get("changes", params)
+    except Exception as e:  # Supabase down: SQLite alerts still show
+        print(f"[alerts] Supabase changes unavailable: {e}", file=sys.stderr)
+        return []
+
+
 def _changes_for(business: dict | None, *, public_only: bool, since: str) -> list[dict]:
-    if supabase_configured():
-        sb = _supabase()
-        params = {"created_at": f"gte.{since}", "order": "created_at.desc", "limit": 100, "select": "*"}
-        if business is not None:
-            if not business.get("supabase_business_id"):
-                return []
-            params["business_id"] = f"eq.{business['supabase_business_id']}"
-        if public_only:
-            params["kind"] = f"in.({','.join(PUBLIC_CHANGES)})"
-        return sb._get("changes", params)
-    return store.list_changes(business_id=business["id"] if business else None,
-                              kinds=list(PUBLIC_CHANGES) if public_only else None, since=since)
+    """One business's changes from wherever its monitor runs; for the public feed, both stores."""
+    if business is not None and uses_supabase(business):
+        return _supabase_changes(business, public_only=public_only, since=since)
+    local = store.list_changes(business_id=business["id"] if business else None,
+                               kinds=list(PUBLIC_CHANGES) if public_only else None, since=since)
+    if business is None and supabase_configured():
+        local = [*local, *_supabase_changes(None, public_only=public_only, since=since)]
+    return local
 
 
 def _place(change: dict) -> tuple[str | None, float | None, float | None]:
@@ -247,8 +263,8 @@ def _place(change: dict) -> tuple[str | None, float | None, float | None]:
     spot = store.find_spot_by_name(change["competitor_name"])
     if spot:
         return spot["id"], spot["lat"], spot["lng"]
-    if not supabase_configured():
-        row = store.competitor_by_name(change["business_id"], change["competitor_name"])
+    row = store.competitor_by_name(change["business_id"], change["competitor_name"])  # None for Supabase changes
+    if row:
         point = geo.geocode(row["address"]) if row and row.get("address") else None
         if point:
             return None, *point

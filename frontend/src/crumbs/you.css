@@ -309,3 +309,50 @@
   outline: 2px solid var(--honey);
   outline-offset: 2px;
 }
+
+.you-emails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.you-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.you-check input {
+  margin-top: 2px;
+  accent-color: var(--ink);
+}
+
+.you-email-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.you-email-status {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--line);
+  font-weight: 600;
+}
+
+.you-email-status.is-sent {
+  background: #dcefe2;
+  color: #1f5c38;
+}
+
+.you-email-status.is-failed {
+  background: #fde8e4;
+  color: #8a2a1c;
+}

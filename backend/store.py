@@ -189,6 +189,18 @@ create table if not exists inventory_snapshots (
   primary key (business_id, variation_id)
 );
 
+-- Every alert email attempt, so delivery can be checked: sent | skipped (with why) | failed (with the error).
+create table if not exists email_log (
+  id text primary key,
+  business_id text not null references businesses (id) on delete cascade,
+  kind text not null,                   -- monitor_alert
+  recipient text,
+  subject text not null,
+  status text not null,
+  detail text,
+  created_at text not null
+);
+
 -- Tailored advice from Ruth's advisor (agent/advisor.py), one row per run.
 create table if not exists advisor_reports (
   id text primary key,
@@ -259,6 +271,8 @@ _ADDED_COLUMNS = {
         "sales_source": "text",                             # csv | square | toast (sales.py)
         "sales_meta": "text not null default '{}'",         # non-secret connection details shown in the app
         "sales_secret": "text",                             # encrypted POS credentials, never sent to the app
+        "owner_email": "text",                              # where competitor alerts are emailed (from sign-in)
+        "email_alerts": "integer not null default 1",       # owner can turn alert emails off
     },
 }
 
@@ -623,3 +637,20 @@ def latest_report(business_id: str, *, complete_only: bool = False) -> dict | No
     query = "select * from advisor_reports where business_id = ?" + (" and status = 'complete'" if complete_only else "")
     with _db() as db:
         return _row(db.execute(query + " order by created_at desc limit 1", (business_id,)).fetchone())
+
+
+# ---------- email log ----------
+
+def log_email(business_id: str, *, kind: str, recipient: str | None, subject: str, status: str,
+              detail: str | None = None) -> None:
+    with _db() as db:
+        db.execute("insert into email_log (id, business_id, kind, recipient, subject, status, detail, created_at)"
+                   " values (?, ?, ?, ?, ?, ?, ?, ?)",
+                   (uuid.uuid4().hex, business_id, kind, recipient, subject, status, detail, now()))
+
+
+def email_log(business_id: str, limit: int = 20) -> list[dict]:
+    with _db() as db:
+        rows = db.execute("select * from email_log where business_id = ? order by created_at desc limit ?",
+                          (business_id, limit)).fetchall()
+    return [_row(r) for r in rows]

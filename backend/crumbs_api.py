@@ -152,7 +152,7 @@ def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Quer
     except ValueError as e:
         raise HTTPException(400, str(e))
     settings = {"share_stock_alerts": int(body.shareStockAlerts), "owner_user_id": user["id"] if user else None,
-                "kind": kind or None}
+                "owner_email": (user or {}).get("email"), "kind": kind or None}
     if body.lowStockThreshold is not None:
         settings["low_stock_threshold"] = body.lowStockThreshold
     if not cuisine:
@@ -275,6 +275,31 @@ def disconnect_sales(business_id: str, user: dict | None = Depends(auth.current_
     _owned(business_id, user)
     sales.disconnect(business_id)
     return sales.status(store.get_business(business_id))
+
+
+# ---------- owner settings: alert emails ----------
+
+class SettingsIn(BaseModel):
+    emailAlerts: bool
+
+
+def _settings(b: dict) -> dict:
+    log = store.email_log(b["id"], limit=5)
+    return {"emailAlerts": bool(b.get("email_alerts", 1)), "ownerEmail": b.get("owner_email"),
+            "recentEmails": [{"subject": e["subject"], "status": e["status"], "detail": e["detail"],
+                              "createdAt": e["created_at"]} for e in log]}
+
+
+@router.get("/business/{business_id}/settings")
+def business_settings(business_id: str, user: dict | None = Depends(auth.current_user)):
+    return _settings(auth.check_owner(store.get_business(business_id), user))
+
+
+@router.post("/business/{business_id}/settings")
+def update_settings(business_id: str, body: SettingsIn, user: dict | None = Depends(auth.current_user)):
+    _owned(business_id, user)
+    store.update_business(business_id, email_alerts=int(body.emailAlerts))
+    return _settings(store.get_business(business_id))
 
 
 # ---------- advisor reports (Ruth's advisor) ----------

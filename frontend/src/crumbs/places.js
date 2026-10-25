@@ -404,3 +404,14 @@ export const connectSquare = (businessId, { accessToken, environment }, { refres
 
 export const connectToast = (businessId, { clientId, clientSecret, restaurantGuid }, { refreshReport = true } = {}) =>
   apiSend('POST', `${salesPath(businessId)}/toast?refreshReport=${refreshReport}`, { clientId, clientSecret, restaurantGuid })
+
+// ---------- competitor checks and alert emails ----------
+
+/** Run the competitor monitor now (about a minute, in the background); new changes arrive as owner alerts. */
+export const checkCompetitorsNow = (businessId) =>
+  apiSend('POST', `/business/${encodeURIComponent(businessId)}/alerts/refresh?monitor=true&stock=false`)
+
+/** { emailAlerts, ownerEmail, recentEmails: [{ subject, status, detail, createdAt }] } */
+export const getAlertSettings = (businessId) => apiSend('GET', `/business/${encodeURIComponent(businessId)}/settings`)
+export const setAlertEmails = (businessId, emailAlerts) =>
+  apiSend('POST', `/business/${encodeURIComponent(businessId)}/settings`, { emailAlerts })

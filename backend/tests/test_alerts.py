@@ -198,11 +198,15 @@ def test_ruths_monitor_runs_through_the_sqlite_adapter(client, monkeypatch):
     ])
     seen = {}
 
-    def fake_run(name, business_type, location, tracked=None):
-        seen["tracked"] = tracked
+    def baseline(name, business_type, location):
         return next(snapshots)
 
-    monkeypatch.setattr(monitor.competitor_agent, "run", fake_run)
+    def recheck(name, business_type, location, tracked):
+        seen["tracked"] = [f"{c['name']}, {c['address']}" for c in tracked]
+        return next(snapshots)
+
+    monkeypatch.setattr(monitor.fast_competitors, "run", baseline)
+    monkeypatch.setattr(monitor.fast_competitors, "run_tracked", recheck)
     monkeypatch.setattr(monitor, "diff", lambda prev, cur: monitor.ChangeReport(changes=[
         monitor.Change(kind="price_change", competitor="Tora Rolls", before="Spicy tuna roll: $9", after="Spicy tuna roll: $11",
                        evidence="menu page", why_it_matters="You are now $2 cheaper on your best seller."),

@@ -10,6 +10,7 @@ const DEFAULT_AREA = { label: 'Capitol Hill', ...CAPITOL_HILL, current: false }
 export function useAlerts(audience, businessId) {
   const [area, setArea] = useState(DEFAULT_AREA)
   const [feed, setFeed] = useState({ alerts: [], isSample: true, loading: true })
+  const [reloads, setReloads] = useState(0)
 
   const locate = useCallback(
     () =>
@@ -41,12 +42,14 @@ export function useAlerts(audience, businessId) {
     return () => {
       live = false
     }
-  }, [area, audience, businessId])
+  }, [area, audience, businessId, reloads])
 
   const markRead = useCallback((id) => {
     markAlertRead(id)
     setFeed((f) => ({ ...f, alerts: f.alerts.map((a) => (a.id === id ? { ...a, read: true } : a)) }))
   }, [])
 
-  return { ...feed, area, locate, resetArea: () => setArea(DEFAULT_AREA), markRead }
+  const reload = useCallback(() => setReloads((n) => n + 1), [])
+
+  return { ...feed, area, locate, resetArea: () => setArea(DEFAULT_AREA), markRead, reload }
 }

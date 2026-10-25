@@ -225,6 +225,92 @@ def run(business: str, business_type: str, location: str, items: list[str] | Non
     }
 
 
+# ---------- repeat checks for the monitor ----------
+
+class StatusNote(BaseModel):
+    name: str
+    address: str | None = None
+    status: str = Field(description="e.g. 'Opened Oct 2026 (Eater Seattle)', 'Permanently closed (Yelp)'")
+    source: str = Field(description="URL that says so")
+
+
+@beta_tool
+def submit_openings(changes: list[StatusNote], notes: list[str] | None = None) -> str:
+    """Submit businesses that recently opened, are opening soon, or closed. Call exactly once; an empty list is fine.
+
+    Args:
+        changes: One entry per business with a dated source for the opening or closure.
+        notes: Anything you couldn't verify.
+    """
+    return "Received."
+
+
+OPENINGS_SYSTEM = """You check whether businesses of a given type near a location recently opened, are about to open,
+or closed (within about the last three months). Run one batch of searches, e.g. "new <type> <location>",
+"<type> opening <location>", "<type> closed <location>". Report a business only when a source with a date says it
+opened, is opening, or closed; put that in status with the month and the source name. Never guess. Then call
+submit_openings once (an empty list is fine)."""
+
+
+def _openings(business_type: str, location: str, tracked: list[str]) -> list[dict]:
+    prompt = f"Type: {business_type}\nLocation: {location}\nAlready tracked: {', '.join(tracked) or 'none'}"
+    try:
+        result = run_agent(OPENINGS_SYSTEM, prompt, [base.search_web, submit_openings], submit_openings,
+                           label="openings", model=FAST_MODEL, effort="low", max_turns=4)
+    except Exception as e:  # openings are a bonus: the price/hours re-check still counts
+        print(f"[fast] openings check failed ({e})", file=sys.stderr)
+        return []
+    return [c for c in result.get("changes") or [] if c.get("name") and c.get("status")]
+
+
+def run_tracked(business: str, business_type: str, location: str, tracked: list[dict]) -> dict:
+    """Re-check the same competitors as last time, for the monitor: one agent per tracked competitor (re-pricing the
+    items found last time, so prices compare like for like) plus one search for openings and closures nearby.
+    `tracked` is the previous snapshot's competitor entries."""
+    start = time.monotonic()
+    picks = [Pick(name=c["name"], address=c.get("address"), website=c.get("website")) for c in tracked if c.get("name")]
+    items = list(dict.fromkeys(
+        p.split(":")[0].strip() for c in tracked for p in (c.get("price_points") or []) if ":" in p
+    ))[:8]
+
+    def safe(p: Pick) -> dict | None:
+        try:
+            return _research_one(p, business_type, location, items, [])
+        except Exception as e:
+            print(f"[fast] {p.name}: failed ({e})", file=sys.stderr)
+            return None
+
+    with ThreadPoolExecutor(max_workers=(len(picks) or 1) + 1) as pool:
+        openings_f = pool.submit(_openings, business_type, location, [p.name for p in picks])
+        results = [r for r in pool.map(safe, picks) if r]
+        openings = openings_f.result()
+
+    menu = [m for r in results for m in r.pop("_menu_observations", [])]
+    for r in results:
+        r.pop("_menu_dropped", 0)
+    competitors = [
+        {k: (v if v is not None or k in ("address", "website", "rating", "review_count", "hours") else []) for k, v in r.items() if k != "caveats"}
+        for r in results
+    ]
+    by_name = {normalized(c["name"]): c for c in competitors}
+    for note in openings:
+        known = by_name.get(normalized(note["name"]))
+        if known is not None:
+            known["status"] = note["status"]
+            known.setdefault("sources", []).append(note["source"])
+        else:
+            competitors.append({"name": note["name"], "address": note.get("address"), "status": note["status"],
+                                "sources": [note["source"]], "price_points": [], "praised_for": [], "complaints": [],
+                                "specialties": []})
+    print(f"[fast] re-check done in {time.monotonic() - start:.0f}s; {len(openings)} opening/closure note(s)", file=sys.stderr)
+    return {
+        "business": business, "type": business_type, "location": location, "date": date.today().isoformat(),
+        "mode": "live_research", "collector": "fast_tracked", "competitors": competitors,
+        "gaps_and_caveats": [f"{r.get('name')}: {c}" for r in results for c in (r.get("caveats") or [])],
+        "evidence_bundle": EvidenceBundle(menu_observations=menu).model_dump(mode="json"),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("business")

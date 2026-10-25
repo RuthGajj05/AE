@@ -216,3 +216,37 @@
   color: var(--muted);
   text-align: center;
 }
+
+.alerts-check {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+
+.alerts-check-btn {
+  align-self: flex-start;
+  padding: 9px 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.alerts-check-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.alerts-check-btn:focus-visible {
+  outline: 2px solid var(--honey);
+  outline-offset: 2px;
+}
+
+.alerts-note.is-error {
+  color: #8a2a1c;
+}

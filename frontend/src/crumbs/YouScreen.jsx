@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react'
 import { signOut, useAuth } from './auth.js'
 import { ALERT_KINDS, AREAS, alertKindOn, initials, isBusiness, useAccount } from './account.js'
 import { FoodIcon } from './foodIcons.jsx'
 import { IconChevron } from './icons.jsx'
-import { CUISINES, matchCuisine } from './places.js'
+import { CUISINES, getAlertSettings, matchCuisine, setAlertEmails } from './places.js'
 import { SalesConnect } from './SalesConnect.jsx'
 import './you.css'
 
@@ -150,6 +151,11 @@ export function YouScreen() {
                 />
               </label>
             </Row>
+            {account.business.id && (
+              <Row title="Alert emails" detail="When competitors change">
+                <AlertEmails businessId={account.business.id} />
+              </Row>
+            )}
             <Row title="Sales data" detail="CSV, Square or Toast">
               {account.business.id ? (
                 <SalesConnect businessId={account.business.id} />
@@ -163,6 +169,50 @@ export function YouScreen() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+/** The owner's alert emails: on/off, where they go, and whether the last few were delivered. */
+function AlertEmails({ businessId }) {
+  const [settings, setSettings] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let live = true
+    getAlertSettings(businessId).then((r) => live && (r.ok ? setSettings(r.data) : setError(r.error)))
+    return () => {
+      live = false
+    }
+  }, [businessId])
+
+  async function toggle(e) {
+    const r = await setAlertEmails(businessId, e.target.checked)
+    if (r.ok) setSettings(r.data)
+    else setError(r.error)
+  }
+
+  if (error) return <p className="you-note">{error}</p>
+  if (!settings) return <p className="you-note">Loading…</p>
+  return (
+    <div className="you-emails">
+      <label className="you-check">
+        <input id="alert-emails" type="checkbox" checked={settings.emailAlerts} onChange={toggle} />
+        Email me when a competitor opens, closes, or changes prices or hours
+      </label>
+      <p className="you-note">
+        {settings.ownerEmail ? `Sent to ${settings.ownerEmail}.` : 'Sign in when you set up your spot to get emails.'}
+      </p>
+      {settings.recentEmails.length > 0 && (
+        <ul className="you-email-log">
+          {settings.recentEmails.map((m, i) => (
+            <li key={i}>
+              <span className={`you-email-status is-${m.status}`}>{m.status}</span> {m.subject}
+              {m.detail && <span className="you-note"> · {m.detail}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

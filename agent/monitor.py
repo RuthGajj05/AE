@@ -30,6 +30,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 import competitor_agent
+import fast_competitors
 from agent_loop import MODEL
 from supabase_store import SupabaseStore
 
@@ -69,6 +70,12 @@ Write the message for a busy owner reading a text: plain words, most important c
 
 def _slug(name: str) -> str:
     return "".join(c if c.isalnum() else "-" for c in name.lower()).strip("-")
+
+
+def tracked_competitors(snapshot: dict) -> list[dict]:
+    """The previous snapshot's competitors still worth re-checking (closed ones are dropped)."""
+    return [c for c in snapshot["competitors"]
+            if not (c.get("status") or "").lower().startswith(("permanently closed", "closed"))]
 
 
 def tracked_from(snapshot: dict) -> list[str]:
@@ -180,8 +187,13 @@ def check(business: dict, store) -> ChangeReport | None:
     run_id = store.start_run(business)
     try:
         previous = store.latest_snapshot(business)
-        tracked = tracked_from(previous) if previous else None
-        current = competitor_agent.run(name, business["business_type"], business["location"], tracked=tracked)
+        # Both runs use the per-competitor research (prices, hours, ratings for each shop), so snapshots compare
+        # like for like; re-checks follow the same shops and re-price the items found last time.
+        if previous is None:
+            current = fast_competitors.run(name, business["business_type"], business["location"])
+        else:
+            current = fast_competitors.run_tracked(name, business["business_type"], business["location"],
+                                                   tracked_competitors(previous))
         snapshot_id = store.save_snapshot(business, current, run_id)
 
         if previous is None:

@@ -1,3 +1,4 @@
+import { checkCompetitorsNow } from './places.js'
 import { useState } from 'react'
 import { alertKindOn, isBusiness, useAccount } from './account.js'
 import './alerts.css'
@@ -32,6 +33,20 @@ export function AlertsScreen({ feed, onOpen }) {
   const [areaMenu, setAreaMenu] = useState(false)
   const [locateError, setLocateError] = useState('')
   const [reminders, setReminders] = useState(() => new Set())
+  const [check, setCheck] = useState(null) // null | { busy } | { note } | { error }
+  const businessId = business ? account.business.id : null
+
+  // The monitor re-researches your competitors (about a minute); then the feed is asked again.
+  async function checkNow() {
+    setCheck({ busy: true })
+    const r = await checkCompetitorsNow(businessId)
+    if (!r.ok) return setCheck({ error: r.error })
+    setCheck({ busy: true, note: 'Checking your competitors… about a minute. New changes show up here and in your email.' })
+    setTimeout(() => {
+      feed.reload()
+      setCheck({ note: 'Done. If anything changed since the last check, it’s under Your spot.' })
+    }, 75000)
+  }
 
   const filters = business ? [...FILTERS, YOURS] : FILTERS
   const active = filters.find((f) => f.id === filter) ?? FILTERS[0]
@@ -131,6 +146,19 @@ export function AlertsScreen({ feed, onOpen }) {
         <p className="alerts-sample">
           <span className="sample-tag">sample data</span>
         </p>
+      )}
+
+      {businessId && (
+        <div className="alerts-check">
+          <button className="alerts-check-btn" onClick={checkNow} disabled={check?.busy}>
+            {check?.busy ? 'Checking…' : 'Check my competitors now'}
+          </button>
+          {(check?.note || check?.error) && (
+            <p className={check.error ? 'alerts-note is-error' : 'alerts-note'} role="status">
+              {check.error ?? check.note}
+            </p>
+          )}
+        </div>
       )}
 
       {yours.length > 0 && (
