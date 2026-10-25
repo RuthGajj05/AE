@@ -10,8 +10,20 @@ Business-side dashboard for neighborhood food businesses in Seattle. An owner en
 
 No login. The profile is kept in the browser's localStorage.
 
-All competitor and trend data is **sample data** (fictional businesses) in `src/data/sample.ts`. It stands in for the
-web research step until that is built.
+## Backend
+
+The scraping and Claude tips live on the backend. The frontend talks to it through two endpoints, documented in
+**[API.md](API.md)** — that's the file to hand the backend team.
+
+Until the backend is ready the app uses mock data (`src/api/mock.ts`, fictional businesses in
+`src/data/sample.ts`) and labels it "Sample data". To switch to the real backend:
+
+```sh
+cp .env.example .env.local   # then set VITE_API_URL=http://localhost:8000 (no keys in this file)
+npm run dev
+```
+
+Add `?mock` to the URL to force sample data (demo fallback), or `?demo` to skip the form with a demo bakery.
 
 ## Run it
 
@@ -23,6 +35,9 @@ npm run build    # type-check and production build
 
 ## Layout
 
+- `src/api/client.ts` — every backend call, plus cleanup of messy responses
+- `src/api/mock.ts` — mock backend with the same response shapes
+- `src/types.ts` — shared request/response types (mirrors API.md)
 - `src/data/` — reference data (categories, neighborhoods, complaint themes) and sample competitors
-- `src/lib/insights.ts` — comparisons and recommendation rules
-- `src/components/` — profile form, dashboard, charts and tables
+- `src/lib/stats.ts` — medians and complaint totals for display
+- `src/components/` — profile form, dashboard, charts, tables, loading and error states

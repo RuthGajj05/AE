@@ -1,19 +1,22 @@
-import { NEIGHBORHOODS, THEMES } from '../data/reference'
-import { money, pct, type NearbyCompetitor } from '../lib/insights'
-import type { Theme } from '../types'
+import { THEMES } from '../data/reference'
+import { money, pct } from '../lib/stats'
+import type { Competitor, Theme } from '../types'
 
-function topComplaint(c: NearbyCompetitor): string {
+const DASH = '—'
+const show = <T,>(v: T | null, fmt: (v: T) => string) => (v === null ? DASH : fmt(v))
+
+function topComplaint(c: Competitor): string {
   const [theme] = (Object.entries(c.complaints) as [Theme, number][]).sort((a, b) => b[1] - a[1])[0] ?? []
-  return theme ? THEMES[theme].label : '—'
+  return theme ? THEMES[theme].label : DASH
 }
 
-export function CompetitorTable({ rows, item }: { rows: NearbyCompetitor[]; item: string }) {
+export function CompetitorTable({ rows, item }: { rows: Competitor[]; item: string }) {
   return (
     <section className="card">
       <header className="card-head">
         <div>
           <h3>Who you're up against</h3>
-          <p className="muted">Nearest first. Price is for a {item}.</p>
+          <p className="muted">Nearest first. Price is for a {item}. “—” means we couldn't find it.</p>
         </div>
       </header>
       <div className="table-scroll">
@@ -34,14 +37,16 @@ export function CompetitorTable({ rows, item }: { rows: NearbyCompetitor[]; item
           <tbody>
             {rows.map((c) => (
               <tr key={c.id}>
-                <td className="strong">{c.name}</td>
-                <td>{NEIGHBORHOODS[c.neighborhood].label}</td>
-                <td className="num">{c.distance < 0.1 ? 'Same area' : `${c.distance.toFixed(1)} mi`}</td>
-                <td className="num">{c.rating.toFixed(1)}</td>
-                <td className="num">{c.reviewCount.toLocaleString()}</td>
-                <td className="num">{money(c.itemPrice)}</td>
-                <td className="num">{c.priceChange90d === 0 ? '—' : pct(c.priceChange90d / 100)}</td>
-                <td className="num">{c.waitMin} min</td>
+                <td className="strong">
+                  {c.url ? <a href={c.url} target="_blank" rel="noreferrer noopener">{c.name}</a> : c.name}
+                </td>
+                <td>{c.neighborhood || DASH}</td>
+                <td className="num">{show(c.distanceMi, (d) => (d < 0.1 ? 'Same area' : `${d.toFixed(1)} mi`))}</td>
+                <td className="num">{show(c.rating, (r) => r.toFixed(1))}</td>
+                <td className="num">{show(c.reviewCount, (r) => r.toLocaleString())}</td>
+                <td className="num">{show(c.itemPrice, money)}</td>
+                <td className="num">{show(c.priceChange90d, (p) => (p === 0 ? 'No change' : pct(p / 100)))}</td>
+                <td className="num">{show(c.waitMin, (w) => `${w} min`)}</td>
                 <td>{topComplaint(c)}</td>
               </tr>
             ))}

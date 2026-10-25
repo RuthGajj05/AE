@@ -1,14 +1,27 @@
-// Sample market data for the Seattle area. Every business here is fictional.
-// It stands in for the web research step until that is connected.
-import type { Category, Competitor, NeighborhoodId, Profile, Theme } from '../types'
+// Sample market data for the Seattle area, used by the mock API until the scraper is live.
+// Every business here is fictional.
+import type { Category, NeighborhoodId, Profile, Theme } from '../types'
+
+export interface SampleBusiness {
+  id: string
+  name: string
+  category: Category
+  neighborhood: NeighborhoodId
+  rating: number
+  reviewCount: number
+  itemPrice: number | null
+  waitMin: number | null
+  priceChange90d: number
+  complaints: Partial<Record<Theme, number>>
+}
 
 type Row = [
   name: string,
   neighborhood: NeighborhoodId,
   rating: number,
   reviewCount: number,
-  itemPrice: number,
-  waitMin: number,
+  itemPrice: number | null,
+  waitMin: number | null,
   priceChange90d: number,
   complaints: Partial<Record<Theme, number>>,
 ]
@@ -21,7 +34,7 @@ const ROWS: Record<Category, Row[]> = {
     ['Sunrise Sweet Shop', 'beacon-hill', 4.2, 210, 3.95, 4, 0, { consistency: 14, online: 11, service: 6 }],
     ['Northside Bread Co.', 'u-district', 4.3, 388, 4.5, 7, 3, { hours: 17, online: 15 }],
     ['Rainy Day Pastry', 'queen-anne', 4.5, 674, 5.0, 8, 2, { price: 15, seating: 12, wait: 9 }],
-    ['Columbia Crust', 'columbia-city', 4.1, 156, 4.25, 5, -2, { service: 13, hours: 10 }],
+    ['Columbia Crust', 'columbia-city', 4.1, 156, 4.25, null, -2, { service: 13, hours: 10 }],
     ['Pike Morning Bakery', 'downtown', 4.3, 1020, 5.5, 10, 5, { wait: 26, price: 18, seating: 15 }],
   ],
   coffee: [
@@ -32,7 +45,7 @@ const ROWS: Record<Category, Row[]> = {
     ['Ave Bean Bar', 'u-district', 4.2, 845, 5.25, 9, 2, { wait: 33, consistency: 14, seating: 20 }],
     ['Kerry View Café', 'queen-anne', 4.7, 1105, 6.25, 6, 4, { price: 24, hours: 7 }],
     ['Third & Pine Coffee', 'downtown', 4.0, 1680, 5.65, 8, 1, { service: 30, consistency: 19, wait: 18 }],
-    ['Hillman Coffee Cart', 'columbia-city', 4.6, 188, 4.75, 3, 0, { hours: 14, seating: 18 }],
+    ['Hillman Coffee Cart', 'columbia-city', 4.6, 188, null, 3, 0, { hours: 14, seating: 18 }],
   ],
   tacos: [
     ['Taquería La Lluvia', 'capitol-hill', 4.6, 980, 4.25, 12, 6, { wait: 38, hours: 6 }],
@@ -54,7 +67,7 @@ const ROWS: Record<Category, Row[]> = {
   ],
 }
 
-export const COMPETITORS: Competitor[] = Object.entries(ROWS).flatMap(([category, rows]) =>
+export const SAMPLE_BUSINESSES: SampleBusiness[] = Object.entries(ROWS).flatMap(([category, rows]) =>
   rows.map(([name, neighborhood, rating, reviewCount, itemPrice, waitMin, priceChange90d, complaints], i) => ({
     id: `${category}-${i}`,
     name,
@@ -69,7 +82,7 @@ export const COMPETITORS: Competitor[] = Object.entries(ROWS).flatMap(([category
   })),
 )
 
-/** Search and demand signals per category (sample). */
+/** Search and demand signals per category. */
 export const TRENDS: Record<Category, string[]> = {
   bakery: [
     'Searches for “matcha croissant” in Seattle are up 41% over the last 90 days.',

@@ -75,10 +75,6 @@ export default function App() {
             <Dashboard profile={profile} />
           </>
         )}
-        <p className="notice">
-          Sample data: competitors and trends shown here are illustrative, fictional Seattle businesses. Live web
-          research isn't connected yet.
-        </p>
       </main>
     </div>
   )
