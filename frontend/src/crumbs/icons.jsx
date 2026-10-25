@@ -36,7 +36,12 @@ const ALERT_ART = {
   low_stock: <path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" />,
 }
 
-export const AlertIcon = ({ kind, size = 20 }) => <Svg size={size}>{ALERT_ART[kind] ?? ALERT_ART.new_spot}</Svg>
+// The backend's owner kinds reuse the closest picture.
+const ALERT_ALIAS = { new_competitor: 'new_spot', hours_change: 'closed', rating_change: 'top_rated', review_trend: 'owner_change' }
+
+export const AlertIcon = ({ kind, size = 20 }) => (
+  <Svg size={size}>{ALERT_ART[kind] ?? ALERT_ART[ALERT_ALIAS[kind]] ?? ALERT_ART.new_spot}</Svg>
+)
 
 export const IconLock = (p) => (
   <Svg size={22} {...p}>

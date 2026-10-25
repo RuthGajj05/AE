@@ -268,18 +268,33 @@ function sampleAlerts(audience) {
     .map((a) => ({ ...a, createdAt: new Date(Date.parse(a.createdAt) + shift).toISOString() }))
 }
 
+/** One GET /api/alerts list, or null when the backend is down or errors. */
+async function fetchAlerts(params) {
+  const payload = await apiGet(`/alerts?${new URLSearchParams(params)}`)
+  return Array.isArray(payload) ? payload : Array.isArray(payload?.alerts) ? payload.alerts : null
+}
+
 /**
- * Alerts near a point, newest first. `audience` is 'consumer' or 'business' (business also gets the consumer feed).
- * From GET /api/alerts, otherwise the sample file. Read flags merge with the ones kept in this browser.
+ * Alerts near a point, newest first (backend/API.md → Alerts). Everyone gets the consumer feed; business accounts
+ * also get their owner alerts (the sample shop's id until onboarding registers with the backend). A list the backend
+ * has nothing for yet is asked again with `demo=true`; no backend → the sample file. Read flags merge with the ones
+ * kept in this browser.
  */
 export async function getAlerts({ lat, lng, audience }) {
-  const payload = await apiGet(`/alerts?${new URLSearchParams({ lat, lng, audience })}`)
-  const live = Array.isArray(payload) ? payload : Array.isArray(payload?.alerts) ? payload.alerts : null
+  const requests = [{ audience: 'consumer', lat, lng, radiusMi: 1 }]
+  if (audience === 'business') requests.push({ audience: 'business', businessId: businessData.you.id })
+  const lists = await Promise.all(
+    requests.map(async (params) => {
+      const list = await fetchAlerts(params)
+      return list && !list.length ? fetchAlerts({ ...params, demo: 'true' }) : list
+    }),
+  )
+  const live = lists[0] === null ? null : lists.flatMap((l) => l ?? [])
   const read = new Set(readList(ALERTS_READ_KEY))
   const alerts = (live ?? sampleAlerts(audience))
     .map((a) => ({ ...a, read: Boolean(a.read) || read.has(a.id) }))
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-  return { alerts, isSample: !live }
+  return { alerts, isSample: !live || live.some((a) => a.demo) }
 }
 
 /** POST /api/alerts/{id}/read, and remember it here so the sample feed stays read too. */

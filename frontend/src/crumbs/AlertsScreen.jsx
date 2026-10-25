@@ -3,13 +3,15 @@ import { alertKindOn, isBusiness, useAccount } from './account.js'
 import './alerts.css'
 import { AlertIcon, IconPin, IconSearch } from './icons.jsx'
 
+// Each chip covers the consumer kind and the matching owner kinds from the backend.
 const FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'fresh_stock', label: 'Fresh in' },
-  { id: 'top_rated', label: 'Top rated' },
-  { id: 'price_change', label: 'Price' },
-  { id: 'new_spot', label: 'New spots' },
+  { id: 'fresh', label: 'Fresh in', kinds: ['fresh_stock'] },
+  { id: 'top', label: 'Top rated', kinds: ['top_rated', 'rating_change'] },
+  { id: 'price', label: 'Price', kinds: ['price_change'] },
+  { id: 'new', label: 'New spots', kinds: ['new_spot', 'new_competitor'] },
 ]
+const YOURS = { id: 'yours', label: 'Your spot' }
 
 /** "12m", "3h", "yesterday", "4d" */
 function timeAgo(iso) {
@@ -31,14 +33,15 @@ export function AlertsScreen({ feed, onOpen }) {
   const [locateError, setLocateError] = useState('')
   const [reminders, setReminders] = useState(() => new Set())
 
+  const filters = business ? [...FILTERS, YOURS] : FILTERS
+  const active = filters.find((f) => f.id === filter) ?? FILTERS[0]
   const q = query.trim().toLowerCase()
   const shown = feed.alerts
     .filter((a) => alertKindOn(account, a.kind))
     .filter((a) => !q || `${a.title} ${a.detail} ${a.cuisine ?? ''}`.toLowerCase().includes(q))
-    .filter((a) => filter === 'all' || filter === 'yours' || a.kind === filter)
+    .filter((a) => !active.kinds || active.kinds.includes(a.kind))
   const yours = business ? shown.filter((a) => a.audience === 'business') : []
   const nearby = filter === 'yours' ? [] : shown.filter((a) => a.audience !== 'business')
-  const filters = business ? [...FILTERS, { id: 'yours', label: 'Your spot' }] : FILTERS
 
   function tap(alert) {
     feed.markRead(alert.id)
