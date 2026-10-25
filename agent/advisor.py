@@ -88,15 +88,21 @@ def run(
     website: str | None = None, days: int = 56,
     *, owner_menu: OwnerMenu | dict | None = None, max_workers: int = 4,
     reports_dir: Path | str | None = None, use_history: bool = True, synthetic_sales: bool = False,
+    max_agents: int = 3, strategy: str = "multi",
 ) -> dict:
     validate_max_workers(max_workers)
+    if isinstance(max_agents, bool) or not isinstance(max_agents, int) or not 1 <= max_agents <= 6:
+        raise ValueError("max_agents must be an integer from 1 to 6")
+    if strategy not in {"multi", "single"}:
+        raise ValueError("strategy must be 'multi' or 'single'")
     _validate_days(days)
     explicit_menu = OwnerMenu.model_validate(owner_menu) if owner_menu is not None else None
     reports_dir = Path(reports_dir) if reports_dir is not None else competitor_agent.REPORTS_DIR
     start = time.monotonic()
     with ThreadPoolExecutor(max_workers=3) as pool:
         competitors_f = pool.submit(competitor_agent.run, business, business_type, location,
-                                    owner_menu=explicit_menu, max_workers=max_workers)
+                                    owner_menu=explicit_menu, max_workers=max_workers,
+                                    max_agents=max_agents, strategy=strategy)
         presence_f = pool.submit(business_agent.research_presence, business, location, website, max_workers=max_workers)
         sales_f = pool.submit(load_sales, sales_source, days, synthetic=synthetic_sales)
         sales, presence = sales_f.result(), presence_f.result()
@@ -182,6 +188,8 @@ def main() -> None:
     parser.add_argument("--website", help="The business's website, if it has one")
     parser.add_argument("--owner-menu", type=Path, help="JSON owner menu; only a fresh explicit complete menu can confirm absent products")
     parser.add_argument("--max-workers", type=int, choices=range(1, 11), default=4, help="Maximum concurrent retrieval tools per research stage (default: 4)")
+    parser.add_argument("--max-agents", type=int, choices=range(1, 7), default=3, help="Maximum concurrent source specialist agents (default: 3)")
+    parser.add_argument("--strategy", choices=("multi", "single"), default="multi")
     parser.add_argument("--reports-dir", type=Path, default=competitor_agent.REPORTS_DIR, help="Directory for saved reports and matching evidence history")
     parser.add_argument("--no-history", action="store_true", help="Analyze only this run's evidence")
     parser.add_argument("--synthetic-sales", action="store_true", help="Label the supplied CSV as demonstration data")
@@ -192,6 +200,7 @@ def main() -> None:
         args.business, args.business_type, args.location, args.sales, args.website, args.days,
         owner_menu=owner_menu, max_workers=args.max_workers, reports_dir=args.reports_dir,
         use_history=not args.no_history, synthetic_sales=args.synthetic_sales,
+        max_agents=args.max_agents, strategy=args.strategy,
     )
 
     out = competitor_agent.save_report(report, args.reports_dir)

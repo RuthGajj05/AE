@@ -1,6 +1,6 @@
 # AE
 
-Python research and advice for small, brick-and-mortar businesses. The existing pipeline researches competitors and the owner's online presence while computing sales statistics, then gives the combined evidence to an advisor. Product analysis adds menu-gap checks and dated review comparisons before recommendations are written.
+Python research and advice for small, brick-and-mortar businesses. The pipeline discovers competitors, then runs independent agents for different source websites while researching the owner's online presence and computing sales statistics. Product analysis adds menu-gap checks and dated review comparisons before recommendations are written.
 
 ```mermaid
 flowchart LR
@@ -14,18 +14,20 @@ flowchart LR
     direction TB
     subgraph C["Competitor research"]
       direction TB
-      OSM["OpenStreetMap<br/>nearby shops, hours (cached)"]
-      DISC["Web search<br/>well-known shops"]
-      REV["Search by branch address<br/>ratings and review evidence"]
-      PRICE["Read menus and sites<br/>listed products and prices"]
-      GP["Google Places<br/>(only if a key is set)"]
-      OSM --> DISC --> REV --> PRICE
-      GP -.-> REV
+      DISC["Bounded discovery<br/>nearby branches and official websites"]
+      subgraph SPECIALISTS["Independent source agents · default 3 concurrent"]
+        OFF["Official menus"]
+        ORD["Public ordering prices"]
+        YELP["Yelp search snippets"]
+        TRIP["TripAdvisor search snippets"]
+        GOOGLE["Google listings / Places sample"]
+      end
+      MERGE["Wait for results<br/>deterministic factual merge"]
+      DISC --> OFF & ORD & YELP & TRIP & GOOGLE
+      OFF & ORD & YELP & TRIP & GOOGLE --> MERGE
     end
-    subgraph B["Your business research"]
-      PRES["Your listings,<br/>reviews, menu, hours"]
-    end
-    subgraph S["Sales analysis"]
+    PRES["Your own listings,<br/>reviews, menu, hours"]
+    subgraph SALES["Sales analysis"]
       ROWS["Same item-level rows for every source"]
       MET["Revenue by item, day, hour<br/>transaction patterns to validate"]
       ROWS --> MET
@@ -36,17 +38,17 @@ flowchart LR
   ADV["Advisor<br/>tailored actions<br/>labeled financial scenarios"]
   OUT["Unique JSON reports<br/>under reports/"]
 
-  IN --> C
-  IN --> B
+  IN --> DISC
+  IN --> PRES
   IN --> SRC
   IN -.->|Owner menu| MI
   SRC --> CSV --> ROWS
   SRC --> SQ --> ROWS
   SRC --> TS --> ROWS
-  C --> MI
+  MERGE --> MI
   MET --> MI
   MI --> ADV
-  B --> ADV
+  PRES --> ADV
   MET --> ADV
   ADV --> OUT
 ```
@@ -85,7 +87,7 @@ The advisor combines sales, online presence, competitor facts, and deterministic
 
 The Moonrise menu file is an **unverified template**. Replace its indicative products with the owner's list. Set `confirmed_complete` to `true` and `confirmed_at` to the confirmation date only when the owner confirms completeness.
 
-The advisor also accepts `--website`, `--max-workers`, `--reports-dir`, and `--no-history`. It saves a separate competitor snapshot for future history and retains the original sales, presence, competitor, and advice sections in the final report.
+The advisor also accepts `--website`, `--strategy multi|single`, `--max-agents`, `--max-workers`, `--reports-dir`, and `--no-history`. It saves a separate competitor snapshot for future history and retains the original sales, presence, competitor, and advice sections in the final report.
 
 ### Pull sales from Square or Toast
 
@@ -120,14 +122,31 @@ Square sandbox sales are automatically labeled synthetic. Use `--synthetic-sales
 ## Run competitor and product research
 
 ```sh
-.venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle"
+.venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle" \
+  --strategy multi --max-agents 3 --max-workers 4
 ```
 
-For product comparisons, add `--owner-menu path/to/menu.json`. Optional controls are `--max-workers 4`, `--window-days 30`, `--min-reviews 10`, `--as-of YYYY-MM-DD`, `--reports-dir reports`, and `--no-history`.
+For product comparisons, add `--owner-menu path/to/menu.json`. Other controls are `--window-days 30`, `--min-reviews 10`, `--as-of YYYY-MM-DD`, `--reports-dir reports`, and `--no-history`.
 
 Historical `--as-of` dates are supported only with offline `--evidence`; live pages are observed today. Worker counts are 1–10 and comparison windows are 1–365 days.
 
 The collector reports competitor facts and source observations. The analysis layer calculates potential product gaps and review trends; the advisor owns tailored recommendations and any explicitly labeled financial scenarios. Collection runs only when invoked; there is no recurring scheduler.
+
+### Independent website specialists
+
+The default `multi` strategy first targets up to eight nearby branches in discovery. It then gives the same verified branch identities to five separate Claude conversations, each with its own tool state, source ledger, domain restrictions, and retrieval budget:
+
+| Agent | Assigned sources and task |
+|---|---|
+| `official_menus` | Discovered official websites: listed products, prices, and hours. Skipped if no official domains were verified. |
+| `ordering_prices` | Public Square, Toast, and Clover ordering pages: products and online-ordering prices, labeled separately from in-store prices. |
+| `yelp_reviews` | Indexed Yelp listings and search snippets only. No direct page extraction or claim to full collected reviews. |
+| `tripadvisor_reviews` | Indexed TripAdvisor listings and search snippets only, with the same limitation. |
+| `google_reviews` | Exact Google listings; selected Places review samples if a key is configured, otherwise indexed Google snippets. |
+
+`--max-agents` limits simultaneous competitor specialists (1–6, default 3). The five specialists are queued when the cap is smaller than five. `--max-workers` separately limits concurrent tool calls **inside each agent** (1–10, default 4). The advisor's own-presence and sales stages remain independently parallel, so neither option is a global process-wide request cap. `--strategy single` keeps the original one-conversation competitor collector.
+
+Once specialists finish, Python merges validated facts in a fixed order. Conflicting ratings and other scalar facts stay unknown; prices are retained as source-specific claims, not averaged. `agent_runs` records statuses, elapsed time, and observation counts, while `source_reports` preserves attribution. A failed or skipped source produces a `partial` collection with caveats; other successful sources remain usable. Discovery failure or failure of every scheduled specialist raises an error. These limits bound work; no live speedup is assumed.
 
 ## Try product analysis without API keys
 
@@ -167,6 +186,7 @@ The Python tests run without live service credentials:
 - `agent/competitor_agent.py`: facts-only collector, analyzed `research(...)` entry point, and CLI.
 - `agent/business_agent.py`: sales calculations and the owner's online-presence research.
 - `agent/pos.py`: Square and Toast item-level sales retrieval.
+- `agent/source_agents.py`: discovery, independent website specialists, source budgets, and deterministic merging.
 - `agent/agent_loop.py`: shared loop with bounded tool context and parallel retrieval.
 - `agent/market_intelligence.py`: deterministic menu-gap and review-trend analysis.
 - `agent/evidence_store.py`: retrieved-source validation, scoped history, and report persistence.

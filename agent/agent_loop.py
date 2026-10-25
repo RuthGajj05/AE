@@ -38,9 +38,12 @@ def validate_max_workers(value: int) -> int:
     return value
 
 
-def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *, max_workers: int = 4) -> dict:
+def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *, max_workers: int = 4,
+              max_turns: int = MAX_TURNS) -> dict:
     """Run the agent and return the input of its successful `submit_tool` call."""
     validate_max_workers(max_workers)
+    if isinstance(max_turns, bool) or not isinstance(max_turns, int) or not 1 <= max_turns <= MAX_TURNS:
+        raise ValueError(f"max_turns must be an integer between 1 and {MAX_TURNS}")
     client = anthropic.Anthropic()
     tools_by_name = {t.name: t for t in tools}
     messages = [{"role": "user", "content": prompt}]
@@ -50,7 +53,7 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *,
         print(f"[{label}] {msg}", file=sys.stderr)
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        for _ in range(MAX_TURNS):
+        for _ in range(max_turns):
             t0 = time.monotonic()
             response = client.beta.messages.create(
                 model=configured_model(),
@@ -104,6 +107,6 @@ def run_agent(system: str, prompt: str, tools: list, submit_tool, label: str, *,
                 log(f"done in {time.monotonic() - start:.0f}s")
                 return dict(calls[successful_submission].input)
         else:
-            raise RuntimeError(f"{label}: did not finish within {MAX_TURNS} turns")
+            raise RuntimeError(f"{label}: did not finish within {max_turns} turns")
 
     raise RuntimeError(f"{label}: finished without calling {submit_tool.name}")

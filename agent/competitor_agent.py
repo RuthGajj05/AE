@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from threading import Lock
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 from anthropic import beta_tool
@@ -49,6 +50,34 @@ tavily: TavilyClient | None = None
 ledger = SourceLedger()
 
 
+@dataclass(frozen=True)
+class SourceScope:
+    """Enforced source and request boundaries for one specialist agent."""
+
+    agent_id: str
+    allowed_domains: tuple[str, ...] | None = None
+    excluded_domains: tuple[str, ...] = ()
+    allowed_branches: frozenset[tuple[str, str]] | None = None
+    allow_page_reads: bool = True
+    allow_google_places: bool = False
+    max_searches: int = 10
+    max_extract_urls: int = 20
+    max_place_calls: int = 12
+
+    def __post_init__(self):
+        for field_name in ("max_searches", "max_extract_urls", "max_place_calls"):
+            value = getattr(self, field_name)
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 100:
+                raise ValueError(f"{field_name} must be an integer from 0 to 100")
+        for field_name in ("allowed_domains", "excluded_domains"):
+            domains = getattr(self, field_name)
+            if domains is not None:
+                cleaned = tuple(dict.fromkeys(domain.strip().lower().removeprefix("www.") for domain in domains))
+                if any(not domain or any(c in domain for c in "/:@?* ") for domain in cleaned):
+                    raise ValueError("Source domains must be hostnames without URLs or wildcards")
+                object.__setattr__(self, field_name, cleaned)
+
+
 @dataclass
 class _ResearchSession:
     """Mutable tool state belongs to one run, including its worker threads."""
@@ -58,6 +87,8 @@ class _ResearchSession:
     submitted: dict = field(default_factory=dict)
     tavily: TavilyClient | None = None
     client_lock: Lock = field(default_factory=Lock)
+    scope: SourceScope | None = None
+    budget: dict = field(default_factory=lambda: {"search_requests": 0, "extract_urls": 0, "place_requests": 0})
 
 
 _active_session: ContextVar[_ResearchSession | None] = ContextVar("research_session", default=None)
@@ -91,14 +122,60 @@ def tavily_client() -> TavilyClient:
 
 
 @contextmanager
-def research_session():
+def research_session(scope: SourceScope | None = None):
     """Isolate shared web tools for a competitor or owner-presence research run."""
-    session = _ResearchSession(tavily_api_key=os.environ.get("TAVILY_API_KEY"))
+    session = _ResearchSession(tavily_api_key=os.environ.get("TAVILY_API_KEY"), scope=scope)
     token = _active_session.set(session)
     try:
         yield session
     finally:
         _active_session.reset(token)
+
+
+def _source_scope() -> SourceScope | None:
+    session = _active_session.get()
+    return session.scope if session else None
+
+
+def _reserve_requests(kind: str, amount: int = 1) -> bool:
+    session = _active_session.get()
+    if session is None or session.scope is None:
+        return True
+    limits = {"search_requests": session.scope.max_searches,
+              "extract_urls": session.scope.max_extract_urls,
+              "place_requests": session.scope.max_place_calls}
+    with session.client_lock:
+        if session.budget[kind] + amount > limits[kind]:
+            return False
+        session.budget[kind] += amount
+    return True
+
+
+def _allowed_source_url(url: str) -> bool:
+    if not isinstance(url, str):
+        return False
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+    except ValueError:
+        return False
+    if parsed.scheme not in {"http", "https"} or not hostname or parsed.username or parsed.password:
+        return False
+    if blocked_url(url, BLOCKED_DOMAINS):
+        return False
+    scope = _source_scope()
+    if scope is None:
+        return True
+    if blocked_url(url, list(scope.excluded_domains)):
+        return False
+    return scope.allowed_domains is None or blocked_url(url, list(scope.allowed_domains))
+
+
+def session_coverage(session: _ResearchSession) -> dict:
+    coverage = session.ledger.coverage()
+    if session.scope is not None:
+        coverage.update(agent_id=session.scope.agent_id, request_counts=dict(session.budget))
+    return coverage
 
 
 GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY")
@@ -142,21 +219,33 @@ def search_web(query: str, purpose: str = "general", max_results: int = 8) -> st
         purpose: "discovery" to find nearby businesses, "reviews" to find customer reviews, or "general".
         max_results: Number of results to return (1-15).
     """
+    scope = _source_scope()
     domains = {"discovery": DISCOVERY_DOMAINS, "reviews": REVIEW_DOMAINS}.get(purpose, [])
+    excluded = list(BLOCKED_DOMAINS)
+    if scope is not None:
+        # A model cannot widen its assigned source domains by changing purpose.
+        domains = scope.allowed_domains
+        excluded = list(dict.fromkeys([*excluded, *scope.excluded_domains]))
+        if domains == ():
+            return "No source domains were assigned to this agent."
+        if len(query) > 400:
+            return "Search query must be at most 400 characters."
+    if not _reserve_requests("search_requests"):
+        return "This source agent has exhausted its search budget; submit the available evidence."
     try:
         resp = tavily_client().search(
             query=query,
             search_depth="advanced",
             max_results=max(1, min(max_results, 15)),
-            include_domains=domains or None,
-            exclude_domains=BLOCKED_DOMAINS or None,
+            include_domains=list(domains) if domains else None,
+            exclude_domains=excluded or None,
         )
     except Exception as e:
         return f"Search failed: {e}"
     results = [
         {"title": r.get("title"), "url": r.get("url"), "snippet": r.get("content"),
          "source_kind": "search_snippet", "retrieved_at": date.today().isoformat()}
-        for r in resp.get("results", [])
+        for r in resp.get("results", []) if _allowed_source_url(r.get("url"))
     ]
     for r in results:
         _source_ledger().add(r["url"], r["snippet"], "search_snippet")
@@ -170,15 +259,22 @@ def read_pages(urls: list[str]) -> str:
     Args:
         urls: Page URLs taken from search results.
     """
-    urls = [u for u in urls if not blocked_url(u, BLOCKED_DOMAINS)][:5]
+    scope = _source_scope()
+    if scope is not None and not scope.allow_page_reads:
+        return "This source agent uses indexed search snippets only; direct page extraction is disabled."
+    urls = list(dict.fromkeys(u for u in urls if _allowed_source_url(u)))[:5]
     if not urls:
         return "No allowed URLs given."
+    if not _reserve_requests("extract_urls", len(urls)):
+        return "This source agent has exhausted its extraction budget; submit the available evidence."
     try:
         resp = tavily_client().extract(urls=urls, extract_depth="advanced", format="markdown")
     except Exception as e:
         return f"Extract failed: {e}"
     pages = []
     for r in resp.get("results", []):
+        if not _allowed_source_url(r.get("url")):
+            continue
         text = r.get("raw_content") or ""
         if len(text) > MAX_PAGE_CHARS:
             text = text[:MAX_PAGE_CHARS] + f"\n[truncated: page was {len(text)} chars]"
@@ -186,6 +282,8 @@ def read_pages(urls: list[str]) -> str:
                       "retrieved_at": date.today().isoformat()})
         _source_ledger().add(r.get("url"), text, "page_text")
     for r in resp.get("failed_results", []):
+        if not _allowed_source_url(r.get("url")):
+            continue
         pages.append({"url": r.get("url"), "error": r.get("error", "could not extract")})
         _source_ledger().fail(r.get("url"), r.get("error", "could not extract"))
     return json.dumps(pages)
@@ -298,6 +396,11 @@ def find_nearby_osm(location: str, place_types: list[str], radius_m: int = 1500)
 
 
 def _places_request(method: str, path: str, field_mask: str, body: dict | None = None) -> dict:
+    scope = _source_scope()
+    if scope is not None and not scope.allow_google_places:
+        raise ValueError("Google Places is not assigned to this source agent")
+    if not _reserve_requests("place_requests"):
+        raise ValueError("This source agent has exhausted its Google Places budget")
     if not GOOGLE_PLACES_API_KEY:
         raise RuntimeError("GOOGLE_PLACES_API_KEY is not set")
     resp = httpx.request(
@@ -400,6 +503,14 @@ def submit_report(
         review_observations: Verbatim feedback with source kind, original publication date (null if unknown), and product mentions. Include reviews without product mentions; never split a summary into invented reviews.
     """
     branches = {(normalized(c.name), normalized(c.address or "")) for c in competitors}
+    scope = _source_scope()
+    if scope is not None:
+        if scope.allowed_branches is not None and not branches.issubset(scope.allowed_branches):
+            raise ValueError("A specialist may only report the exact branches assigned by discovery")
+        if any(not _allowed_source_url(url) for competitor in competitors for url in competitor.sources):
+            raise ValueError("Competitor source URLs must belong to this specialist's assigned domains")
+        if any(not _allowed_source_url(item.source_url) for item in [*menu_observations, *review_observations]):
+            raise ValueError("Evidence URLs must belong to this specialist's assigned domains")
     bundle = _source_ledger().validate(EvidenceBundle(
         menu_observations=menu_observations, review_observations=review_observations,
     ), branches)
@@ -432,17 +543,28 @@ Rules:
 
 def run(
     business: str, business_type: str, location: str, owner_menu: OwnerMenu | dict | None = None,
-    *, max_workers: int = 4,
+    *, max_workers: int = 4, max_agents: int = 3, strategy: str = "multi",
 ) -> dict:
-    """Collect competitor facts with isolated tool state; no advice is generated."""
+    """Discover competitors, then research source specialties in parallel."""
     if isinstance(max_workers, bool) or not isinstance(max_workers, int) or not 1 <= max_workers <= 10:
         raise ValueError("max_workers must be an integer from 1 to 10")
+    if isinstance(max_agents, bool) or not isinstance(max_agents, int) or not 1 <= max_agents <= 6:
+        raise ValueError("max_agents must be an integer from 1 to 6")
+    if strategy not in {"multi", "single"}:
+        raise ValueError("strategy must be 'multi' or 'single'")
     if any(not isinstance(value, str) or not value.strip() for value in (business, business_type, location)):
         raise ValueError("business, business_type and location must not be blank")
     owner = OwnerMenu.model_validate(owner_menu or {})
     missing = [key for key in ("ANTHROPIC_API_KEY", "TAVILY_API_KEY") if not os.environ.get(key)]
     if missing:
         raise ValueError("Live research needs " + ", ".join(missing) + ". Use --evidence for offline analysis.")
+    if strategy == "multi":
+        if __package__:
+            from .source_agents import run_multi_source
+        else:
+            from source_agents import run_multi_source
+        return run_multi_source(business, business_type, location, owner,
+                                max_workers=max_workers, max_agents=max_agents)
     tools = [find_nearby_osm, search_web, read_pages, submit_report]
     if GOOGLE_PLACES_API_KEY:
         tools[1:1] = [find_places, get_place_reviews]
@@ -459,7 +581,7 @@ def run(
         return {
             "business": business, "type": business_type, "location": location,
             "date": date.today().isoformat(), "mode": "live_research",
-            "source_coverage": session.ledger.coverage(), **session.submitted,
+            "source_coverage": session_coverage(session), **session.submitted,
         }
 
 
@@ -509,6 +631,7 @@ def research(
     business: str, business_type: str, location: str, owner_menu: OwnerMenu | dict | None = None,
     *, reports_dir: Path | str = REPORTS_DIR, window_days: int = 30, min_reviews: int = 10,
     use_history: bool = True, max_workers: int = 4, save: bool = True,
+    max_agents: int = 3, strategy: str = "multi",
 ) -> dict:
     """Return JSON-ready competitor facts and reproducible product intelligence.
 
@@ -521,7 +644,8 @@ def research(
         raise ValueError("window_days must be 1–365 and min_reviews must be positive integers")
     owner = OwnerMenu.model_validate(owner_menu or {})
     directory = Path(reports_dir)
-    report = run(business, business_type, location, owner, max_workers=max_workers)
+    report = run(business, business_type, location, owner, max_workers=max_workers,
+                 max_agents=max_agents, strategy=strategy)
     report = analyze_report(report, owner, reports_dir=directory, window_days=window_days,
                             min_reviews=min_reviews, use_history=use_history)
     if save:
@@ -540,6 +664,8 @@ def main() -> None:
     parser.add_argument("--window-days", type=int, default=30, help="Length of each adjacent review comparison period")
     parser.add_argument("--min-reviews", type=int, default=10, help="Minimum eligible reviews in each matched comparison period")
     parser.add_argument("--max-workers", type=int, default=4, help="Parallel retrieval workers per live run (1–10)")
+    parser.add_argument("--max-agents", type=int, default=3, choices=range(1, 7), help="Concurrent source specialist agents (default: 3)")
+    parser.add_argument("--strategy", choices=("multi", "single"), default="multi", help="Source specialists, or the original single-agent collector")
     parser.add_argument("--reports-dir", type=Path, default=REPORTS_DIR)
     parser.add_argument("--no-history", action="store_true", help="Analyze only this input; ignore previous reports")
     args = parser.parse_args()
@@ -561,7 +687,8 @@ def main() -> None:
                 "evidence_bundle": bundle.model_dump(mode="json"),
             }
         else:
-            report = run(args.business, args.business_type, args.location, owner_menu, max_workers=args.max_workers)
+            report = run(args.business, args.business_type, args.location, owner_menu,
+                         max_workers=args.max_workers, max_agents=args.max_agents, strategy=args.strategy)
             report["mode"] = "live_research"
         report = analyze_report(
             report, owner_menu, reports_dir=args.reports_dir, as_of=args.as_of,

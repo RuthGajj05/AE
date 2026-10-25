@@ -357,7 +357,7 @@ class ParallelResearchTests(unittest.TestCase):
              patch.object(agent, "GOOGLE_PLACES_API_KEY", None), \
              patch.object(SourceLedger, "validate", validate), \
              ThreadPoolExecutor(max_workers=2) as outer:
-            futures = [outer.submit(agent.run, business, "bakery", f"{business} area", max_workers=2)
+            futures = [outer.submit(agent.run, business, "bakery", f"{business} area", max_workers=2, strategy="single")
                        for business in ("alpha", "beta")]
             reports = [future.result(timeout=10) for future in futures]
 
@@ -391,7 +391,7 @@ class ParallelResearchTests(unittest.TestCase):
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "unused-test", "TAVILY_API_KEY": "unused-test"}), \
              patch.object(agent_loop.anthropic, "Anthropic", side_effect=RuntimeError("simulated model failure")):
             with self.assertRaisesRegex(RuntimeError, "simulated model failure"):
-                agent.run("Example", "bakery", "Seattle")
+                agent.run("Example", "bakery", "Seattle", strategy="single")
         self.assertIsNone(agent._active_session.get())
 
 

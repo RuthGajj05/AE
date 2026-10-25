@@ -23,15 +23,47 @@ report = research(
     min_reviews=10,
     use_history=True,
     max_workers=4,
+    max_agents=3,
+    strategy="multi",
     save=True,
 )
 ```
 
 `research(...)` returns a JSON-ready dictionary after collection, history merging, and product analysis. It is synchronous; the calling application should run it in its own worker. `save=True` also writes a report but does not add a filesystem path to the returned contract. `save=False` skips writing; use `use_history=False` as well for an isolated run.
 
-The original `run(business, business_type, location, owner_menu=None, *, max_workers=4)` remains the facts collector. It returns competitor research and current observations without product analysis or persistence. Use `research(...)` for the combined contract, or `analyze_report(...)` when coordinating the existing advisor pipeline.
+`run(business, business_type, location, owner_menu=None, *, max_workers=4, max_agents=3, strategy="multi")` is the facts collector. It returns competitor research and current observations without product analysis or persistence. Use `research(...)` for the combined contract, or `analyze_report(...)` when coordinating the existing advisor pipeline.
 
 `analyze_report(report, owner_menu, *, reports_dir=REPORTS_DIR, as_of=None, window_days=30, min_reviews=10, use_history=True)` takes the collector's dictionary and a validated `OwnerMenu`. It enriches and returns that dictionary without collecting more pages. `as_of` is a Python `date` when supplied.
+
+## Source agents and concurrency
+
+`strategy="multi"` is the default for `run(...)`, `research(...)`, and the advisor. Discovery targets up to eight competitor branches before the specialists start. The `official_menus`, `ordering_prices`, `yelp_reviews`, `tripadvisor_reviews`, and `google_reviews` agents then run independent Claude conversations with isolated tool state and source ledgers. Source domains and discovered branches are enforced by tools and submission validation, not just described in prompts.
+
+`max_agents` (1–6, default 3) limits active competitor specialists. `max_workers` (1–10, default 4) limits tool calls within **each** agent. They do not limit total work across simultaneous application requests or the advisor's separate own-presence agent. Use `strategy="single"` for the original one-conversation collector; it does not return the multi-agent status fields.
+
+Current per-run budgets:
+
+| Stage/profile | Model turns | Web searches | Extracted URLs | Places requests |
+|---|---:|---:|---:|---:|
+| Discovery | 6 | 6 | 0 | 3 if configured |
+| Official menus / public ordering, each | 8 | 10 | 20 | 0 |
+| Yelp / TripAdvisor, each | 8 | 10 | 0 | 0 |
+| Google | 8 | 10 | 0 | 16 if configured |
+
+These are limits, not promised retrieval volumes or completion times. Google's 16-request budget permits a lookup and detail request for each of eight branches. Official-menu scope is the discovered official domains, excluding the configured ordering/review domains plus Facebook and Instagram; missing official domains cause that agent to be skipped. Ordering scope is `square.site`, `squareup.com`, `toasttab.com`, and `clover.com`, including their subdomains. It accesses public ordering pages, independently of the owner's private POS sales integration.
+
+Yelp and TripAdvisor specialists expose search only. Their excerpts remain `search_snippet` or `editorial`, never full collected reviews. Google uses Places only when configured and labels its small selected review sample `google_places_sample`; indexed fallback results remain snippets. None of those sampled/excerpt sources qualifies for temporal review trends.
+
+The orchestrator waits for scheduled agents, then merges successful reports in profile order, independent of completion order. Conflicting nonempty scalar values (such as rating, review count, or hours) are left `null` with a caveat. List claims, including prices, are retained and deduplicated, not averaged. Use each `source_reports` entry for platform-specific attribution. Exact evidence copies are removed; product analysis then handles stable IDs and other supported review duplicates.
+
+Multi-agent live reports add:
+
+- `collection_status`: `complete` only when discovery and every specialist complete; otherwise `partial` for failed or skipped sources.
+- `agent_runs`: one discovery entry and one per specialist, each with `id`, `status` (`complete`, `failed`, or `skipped`), `error`, `elapsed_seconds`, `competitor_count`, `menu_observation_count`, `review_observation_count`, and `source_coverage`. These are per-agent counts before cross-agent deduplication.
+- `source_reports`: `{agent_id, report}` entries for discovery and successfully submitted specialists only.
+- Combined `source_coverage` includes contributing `agent_ids` per URL and `agent_id` on extraction failures.
+
+Partial collection is valid output, not proof of comprehensive coverage. If no branches are discovered, specialists are skipped and an empty partial report carries the reason. Failed agents' unsubmitted facts are not merged. Discovery failure, or failure of every scheduled specialist, raises an error instead of returning a fabricated successful report. The host application should display partial status and source caveats alongside recommendations.
 
 ## Keep the existing advisor pipeline
 
@@ -47,6 +79,8 @@ report = advise(
     owner_menu={"products": ["Butter croissant"],
                 "confirmed_complete": False, "confirmed_at": None},
     max_workers=4,
+    max_agents=3,
+    strategy="multi",
     reports_dir=Path("reports"),
     use_history=True,
     synthetic_sales=False,
@@ -96,6 +130,7 @@ Supply all collected review texts, including reviews with no product mentions, s
 | `mode` | `live_research` or `imported_evidence`; history is isolated by mode. |
 | `competitors`, `gaps_and_caveats` | Collector's factual output. There is no collector summary, advice, or price-benchmark field. |
 | `source_coverage` | Available for live collection: retrieval kinds and failed extractions, not a collected-review total. |
+| `collection_status`, `agent_runs`, `source_reports` | Multi-agent live collection status and per-source results; absent in the single-agent/offline paths. |
 | `schema_version`, `captured_at`, `history_reports_used` | Current schema version (`2`), capture timestamp, and number of contributing history reports. |
 | `owner_menu` | Owner-supplied products and confirmation state. |
 | `analysis_date` | Date used for the comparison windows. |
