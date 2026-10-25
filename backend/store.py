@@ -128,6 +128,67 @@ create table if not exists picks (
 );
 create index if not exists picks_cuisine_idx on picks (cuisine, created_at);
 
+-- Ruth's monitor (agent/monitor.py) writes runs and changes through MonitorStore in alerts.py.
+create table if not exists monitor_runs (
+  id text primary key,
+  business_id text not null references businesses (id) on delete cascade,
+  started_at text not null,
+  finished_at text,
+  status text not null default 'running',
+  is_baseline integer not null default 0,
+  changes_count integer not null default 0,
+  error text
+);
+
+create table if not exists changes (
+  id text primary key,
+  business_id text not null references businesses (id) on delete cascade,
+  run_id text,
+  snapshot_id text,
+  previous_snapshot_id text,
+  kind text not null,                   -- new_competitor | closed | price_change | hours_change | rating_change | review_trend | other
+  competitor_name text not null,
+  before text,
+  after text,
+  evidence text,
+  why_it_matters text,
+  created_at text not null
+);
+create index if not exists changes_business_idx on changes (business_id, created_at desc);
+
+-- crumbs' own alerts (stock and top-rated); monitor changes are read from `changes`.
+create table if not exists alerts (
+  id text primary key,
+  kind text not null,                   -- fresh_stock | low_stock | top_rated
+  audience text not null,               -- consumer | business
+  business_id text,                     -- set for business alerts (owner only)
+  spot_id text,
+  cuisine text,
+  title text not null,
+  detail text not null,
+  lat real,
+  lng real,
+  dedupe_key text unique,
+  created_at text not null,
+  demo integer not null default 0
+);
+create index if not exists alerts_audience_idx on alerts (audience, created_at desc);
+
+create table if not exists alert_reads (
+  alert_id text primary key,
+  read_at text not null
+);
+
+-- Last Square IN_STOCK count per tracked item, to detect restocks and low stock.
+create table if not exists inventory_snapshots (
+  business_id text not null references businesses (id) on delete cascade,
+  variation_id text not null,
+  item_name text not null,
+  quantity real,
+  synced_at text not null,
+  primary key (business_id, variation_id)
+);
+
 create table if not exists business_goals (
   business_id text not null references businesses (id) on delete cascade,
   goal text not null,
@@ -172,9 +233,24 @@ def _dump(value) -> str:
     return json.dumps(value, separators=(",", ":"), sort_keys=True)
 
 
+# Columns added after the first release; init() adds any that an older crumbs.db is missing.
+_ADDED_COLUMNS = {
+    "businesses": {
+        "share_stock_alerts": "integer not null default 0",  # owner opted in to public fresh-stock alerts
+        "low_stock_threshold": "real not null default 5",
+        "supabase_business_id": "text",                     # Ruth's Supabase businesses.id, for the monitor
+    },
+}
+
+
 def init() -> None:
     with _db() as db:
         db.executescript(SCHEMA)
+        for table, columns in _ADDED_COLUMNS.items():
+            existing = {row[1] for row in db.execute(f"pragma table_info({table})")}
+            for name, definition in columns.items():
+                if name not in existing:
+                    db.execute(f"alter table {table} add column {name} {definition}")
 
 
 # ---------- businesses ----------
@@ -194,6 +270,12 @@ def create_business(*, name: str, business_type: str, location: str, address: st
              f"spot-{business_id}", _dump(profile or {}), int(demo), stamp, stamp),
         )
     return business_id
+
+
+def list_businesses(*, include_demo: bool = False) -> list[dict]:
+    with _db() as db:
+        rows = db.execute("select * from businesses" + ("" if include_demo else " where demo = 0") + " order by created_at").fetchall()
+    return [_row(r) for r in rows]
 
 
 def get_business(business_id: str) -> dict | None:
@@ -376,3 +458,116 @@ def latest_snapshot(business_id: str) -> dict | None:
     with _db() as db:
         return _row(db.execute("select * from snapshots where business_id = ? order by taken_at desc limit 1",
                                (business_id,)).fetchone())
+
+
+# ---------- monitor runs and changes (Ruth's monitor) ----------
+
+def start_monitor_run(business_id: str) -> str:
+    run_id = uuid.uuid4().hex
+    with _db() as db:
+        db.execute("insert into monitor_runs (id, business_id, started_at) values (?, ?, ?)", (run_id, business_id, now()))
+    return run_id
+
+
+def finish_monitor_run(run_id: str, *, error: str | None, changes: int, baseline: bool) -> None:
+    with _db() as db:
+        db.execute("update monitor_runs set finished_at = ?, status = ?, error = ?, changes_count = ?, is_baseline = ? where id = ?",
+                   (now(), "failed" if error else "succeeded", error, changes, int(baseline), run_id))
+
+
+def save_changes(business_id: str, changes: list[dict], *, run_id: str | None = None, snapshot_id: str | None = None,
+                 previous_snapshot_id: str | None = None, created_at: str | None = None) -> None:
+    with _db() as db:
+        db.executemany(
+            "insert into changes (id, business_id, run_id, snapshot_id, previous_snapshot_id, kind, competitor_name, before,"
+            " after, evidence, why_it_matters, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(uuid.uuid4().hex, business_id, run_id, snapshot_id, previous_snapshot_id, c["kind"], c["competitor"],
+              c.get("before"), c.get("after"), c.get("evidence"), c.get("why_it_matters"), created_at or now()) for c in changes],
+        )
+
+
+def list_changes(*, business_id: str | None = None, kinds: list[str] | None = None, since: str | None = None) -> list[dict]:
+    query, args = "select * from changes where 1 = 1", []
+    if business_id:
+        query += " and business_id = ?"
+        args.append(business_id)
+    if kinds:
+        query += f" and kind in ({', '.join('?' for _ in kinds)})"
+        args += kinds
+    if since:
+        query += " and created_at >= ?"
+        args.append(since)
+    with _db() as db:
+        return [_row(r) for r in db.execute(query + " order by created_at desc limit 200", args).fetchall()]
+
+
+def competitor_by_name(business_id: str, name: str) -> dict | None:
+    with _db() as db:
+        return _row(db.execute("select * from competitors where business_id = ? and name = ?", (business_id, name)).fetchone())
+
+
+def find_spot_by_name(name: str) -> dict | None:
+    """A scored spot with this name (case- and punctuation-insensitive), for placing a change on the map."""
+    key = "".join(ch for ch in name.lower() if ch.isalnum())
+    with _db() as db:
+        for row in db.execute("select id, name, lat, lng from spots where lat is not null"):
+            if "".join(ch for ch in row["name"].lower() if ch.isalnum()) == key:
+                return dict(row)
+    return None
+
+
+# ---------- crumbs alerts ----------
+
+def add_alert(alert: dict) -> bool:
+    """Insert unless an alert with the same dedupe_key exists. Returns whether it was added."""
+    with _db() as db:
+        cur = db.execute(
+            "insert or ignore into alerts (id, kind, audience, business_id, spot_id, cuisine, title, detail, lat, lng, dedupe_key,"
+            " created_at, demo) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (alert.get("id") or uuid.uuid4().hex, alert["kind"], alert["audience"], alert.get("business_id"), alert.get("spot_id"),
+             alert.get("cuisine"), alert["title"], alert["detail"], alert.get("lat"), alert.get("lng"), alert.get("dedupe_key"),
+             alert.get("created_at") or now(), int(alert.get("demo", False))),
+        )
+        return cur.rowcount > 0
+
+
+def list_alerts(*, audience: str, business_id: str | None = None, since: str | None = None) -> list[dict]:
+    query, args = "select * from alerts where audience = ? and demo = 0", [audience]
+    if business_id:
+        query += " and business_id = ?"
+        args.append(business_id)
+    if since:
+        query += " and created_at >= ?"
+        args.append(since)
+    with _db() as db:
+        return [_row(r) for r in db.execute(query + " order by created_at desc limit 200", args).fetchall()]
+
+
+def mark_read(alert_id: str) -> None:
+    with _db() as db:
+        db.execute("insert or ignore into alert_reads (alert_id, read_at) values (?, ?)", (alert_id, now()))
+
+
+def read_ids(alert_ids: list[str]) -> set[str]:
+    if not alert_ids:
+        return set()
+    with _db() as db:
+        rows = db.execute(f"select alert_id from alert_reads where alert_id in ({', '.join('?' for _ in alert_ids)})", alert_ids)
+        return {r[0] for r in rows}
+
+
+# ---------- inventory snapshots (Square) ----------
+
+def get_inventory(business_id: str) -> dict[str, dict]:
+    with _db() as db:
+        rows = db.execute("select * from inventory_snapshots where business_id = ?", (business_id,)).fetchall()
+    return {r["variation_id"]: dict(r) for r in rows}
+
+
+def save_inventory(business_id: str, items: list[dict]) -> None:
+    stamp = now()
+    with _db() as db:
+        db.executemany(
+            "insert or replace into inventory_snapshots (business_id, variation_id, item_name, quantity, synced_at) values (?, ?, ?, ?, ?)",
+            [(business_id, i["variationId"], i["name"], i["quantity"], stamp) for i in items],
+        )

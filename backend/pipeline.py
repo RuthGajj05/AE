@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 import anthropic
 
+import alerts
 import collect
 import config
 import cuisines
@@ -149,6 +150,7 @@ def get_spots(cuisine: str, lat: float, lng: float, radius_mi: float, *, depth: 
 
 def _score_area(cuisine: str, lat: float, lng: float, radius_mi: float, depth: str) -> dict:
     key = area_key(cuisine, lat, lng, radius_mi)
+    previous = store.get_area(key, max_age_hours=STALE_OK_HOURS)  # to spot new #1s (top_rated alerts)
     collected = collect.collect(cuisine, lat, lng, radius_mi, depth)
     store.save_snapshot(collected["raw"], area_key=key)
     client = anthropic.Anthropic()
@@ -169,6 +171,8 @@ def _score_area(cuisine: str, lat: float, lng: float, radius_mi: float, depth: s
     if not views:
         caveats.append("No spots with usable addresses were found nearby.")
     payload = assemble(cuisine, views, source="live", scraped_at=now_iso(), caveats=caveats)
+    for alert in alerts.top_rated_alerts(cuisine, key, previous["payload"]["spots"] if previous else None, views):
+        store.add_alert(alert)
     store.put_area(key, cuisine=cuisine, lat=lat, lng=lng, radius_mi=radius_mi, payload=payload, status=payload["collectionStatus"])
     return payload
 

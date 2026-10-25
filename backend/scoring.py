@@ -143,6 +143,28 @@ def best_at(spots: list[dict], attributes: list[dict]) -> dict[str, str]:
     return {spot_id: attr_id for spot_id, (attr_id, _) in leads.items()}
 
 
+def attribute_leaders(spots: list[dict], attributes: list[dict]) -> dict[str, str]:
+    """{attribute id: spot id} for the strict #1 on each attribute (at least two spots with a value, no tie)."""
+    leaders: dict[str, str] = {}
+    for attr in attributes:
+        valued = [(metric_value(s, attr["id"]), s["id"]) for s in spots]
+        valued = sorted(((v, i) for v, i in valued if v is not None), reverse=attr["id"] != "wait")
+        if len(valued) >= 2 and valued[0][0] != valued[1][0]:
+            leaders[attr["id"]] = valued[0][1]
+    return leaders
+
+
+def new_leaders(previous: list[dict] | None, current: list[dict], attributes: list[dict]) -> dict[str, str]:
+    """Attributes whose #1 spot changed since the previous scoring of the same area: {attribute id: new #1 spot id}.
+
+    The first scoring of an area is a baseline and produces nothing, like Ruth's monitor.
+    """
+    if previous is None:
+        return {}
+    before = attribute_leaders(previous, attributes)
+    return {attr: spot for attr, spot in attribute_leaders(current, attributes).items() if before.get(attr) != spot}
+
+
 def best_at_label(attr: dict) -> str:
     if attr["id"] == "wait":
         return "Shortest wait"
