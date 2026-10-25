@@ -96,6 +96,14 @@ TOAST_RESTAURANT_GUID=...
 
 The Toast integration is written from Toast's docs and hasn't been tested against a live account yet. Keep any real owner's sales data out of the repo (e.g. in `private/`, which is gitignored).
 
+### Monitoring: alert the owner when something changes
+
+```sh
+.venv/bin/python agent/monitor.py "Sea Wolf Bakers" bakery "Fremont, Seattle" --sms +12065550123
+```
+
+The first run saves a baseline of the competitors. Each later run re-checks the same competitors (plus a search for new openings and closures), compares with the last snapshot, and if anything material changed (a new shop, a closure, a price change, new hours) prints a short message, appends it to `state/<business>/notifications.log`, and texts it to `--sms` if Twilio is configured (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` in `.env`). Run it on a schedule, e.g. Monday, Wednesday and Friday mornings.
+
 Competitor research only:
 
 ```sh
@@ -112,6 +120,7 @@ Competitor research only:
 - `agent/competitor_agent.py`: competitor research agent and its tools (OpenStreetMap, Tavily, optional Google Places)
 - `agent/business_agent.py`: sales-data analysis and the agent that researches the business's own online presence
 - `agent/pos.py`: pulls item-level sales from the Square and Toast APIs
+- `agent/monitor.py`: re-checks competitors on a schedule and notifies the owner of changes
 - `agent/agent_loop.py`: shared agent loop that runs each turn's tool calls in parallel
 - `agent/sources.py`: which sites web search uses for listings and reviews
 - `scripts/make_sample_sales.py`: generates the fake sample sales data

@@ -54,6 +54,9 @@ class Competitor(BaseModel):
     rating: float | None = Field(None, description="Average star rating, if found")
     review_count: int | None = None
     hours: str | None = Field(None, description="e.g. 'We-Su 7am-5pm, closed Mon-Tue'")
+    status: str | None = Field(
+        None, description="Only if a source says so: e.g. 'Opened Oct 2026 (Eater Seattle)', 'Permanently closed (Yelp)'"
+    )
     specialties: list[str] = Field(default_factory=list)
     price_points: list[str] = Field(
         default_factory=list, description="Item and price, e.g. 'Croissant: $4.75'"
@@ -293,17 +296,24 @@ Rules:
 - Work in a few large batches, not many small turns: every turn costs time. Once you've chosen the competitors, request all of their review searches in one turn, then all of their menu and price lookups (read_pages plus search_web) in the next turn. Only follow up on specific gaps after that, again batching every follow-up into one turn. Avoid turns with a single tool call unless nothing else is left to do."""
 
 
-def run(business: str, business_type: str, location: str) -> dict:
+TRACKED_INSTRUCTIONS = """
+This is a repeat check. Re-research exactly these tracked competitors (same branches and addresses) so the results can be compared with last time, rather than choosing a new set:
+{tracked}
+
+Also run one batch of searches for {business_type} businesses near {location} that recently opened, are opening soon, or closed (e.g. "new {business_type} opening {location}", "{business_type} closed {location}"). Add a competitor that isn't tracked only if a source shows it opened or is opening recently, and set its status to say so with the date and source. If a tracked competitor has closed, keep it and set its status."""
+
+
+def run(business: str, business_type: str, location: str, tracked: list[str] | None = None) -> dict:
+    """Research competitors. `tracked` (e.g. "Byen Bakeri, 15 Nickerson St") re-checks a fixed set."""
     tools = [find_nearby_osm, search_web, read_pages, submit_report]
     if GOOGLE_PLACES_API_KEY:  # paid; only used when a key is configured
         tools[1:1] = [find_places, get_place_reviews]
-    report = run_agent(
-        SYSTEM,
-        f"Business: {business}\nType: {business_type}\nLocation: {location}",
-        tools,
-        submit_report,
-        label="competitors",
-    )
+    prompt = f"Business: {business}\nType: {business_type}\nLocation: {location}"
+    if tracked:
+        prompt += TRACKED_INSTRUCTIONS.format(
+            tracked="\n".join(f"- {t}" for t in tracked), business_type=business_type, location=location,
+        )
+    report = run_agent(SYSTEM, prompt, tools, submit_report, label="competitors")
     return {
         "business": business,
         "type": business_type,
