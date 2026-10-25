@@ -363,3 +363,16 @@ def count_demo_picks(cuisine: str) -> int:
 def clear_demo_picks(cuisine: str) -> None:
     with _db() as db:
         db.execute("delete from picks where cuisine = ? and demo = 1", (cuisine,))
+
+
+def get_scores(spot_id: str) -> list[dict]:
+    """Every food type this spot was scored for, newest first."""
+    with _db() as db:
+        rows = db.execute("select * from spot_scores where spot_id = ? order by scored_at desc", (spot_id,)).fetchall()
+    return [_row(r) for r in rows]
+
+
+def latest_snapshot(business_id: str) -> dict | None:
+    with _db() as db:
+        return _row(db.execute("select * from snapshots where business_id = ? order by taken_at desc limit 1",
+                               (business_id,)).fetchone())
