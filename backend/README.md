@@ -51,8 +51,9 @@ The first monitor run per business saves a baseline. `top_rated` alerts come fro
 
 ### Before a demo: fill Supabase for the Lovable app
 
-Apply both files in `supabase/migrations/` to the Supabase project (SQL editor, Ruth's first), set `SUPABASE_URL` and
-`SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_SECRET_KEY`) in `backend/.env`, then:
+The Lovable app owns its tables (`spots`, `spot_scores`, `picks`, `alerts`, `saved_spots`, `profiles`); this writes
+into them in their exact shapes and never changes them. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (or
+`SUPABASE_SECRET_KEY`) in `backend/.env`, then:
 
 ```sh
 .venv/bin/python scripts/sync_to_supabase.py --demo          # sample spots + alerts, no AI keys needed
@@ -60,9 +61,20 @@ Apply both files in `supabase/migrations/` to the Supabase project (SQL editor, 
 .venv/bin/python scripts/sync_to_supabase.py --skip-advisor  # live, without Ruth's slow advisor run
 ```
 
-It scores the five food types for Capitol Hill, then for each business an owner created in the app: Home's
-insights and rivals, Ruth's monitor and advisor, and the Square stock alerts (`--square-business` picks which
-business the token belongs to when there are several). It exits non-zero if any Supabase write fails.
+| Lovable table | Written as |
+|---|---|
+| `spots` | One row per spot, the top 4 per food type as the app compares them: `letter` A–D, `distance_mi` (walk from the middle of Capitol Hill), `hours` = "open until" |
+| `spot_scores` | One row per spot and attribute (`score` 0–100), with the spot's `wait_minutes`, `ambiance_pct`, `ambiance_mention_rate` ("1 of 4 reviews"), `best_at`, `reason`, `is_pick` on each row. A re-run replaces a food type's rows. |
+| `alerts` | `id` is a uuid made from the crumbs alert id (re-sending is a no-op); `distance_mi` from the middle of Capitol Hill. Owner alerts have `audience = 'business'`: the table has no business column, so every business account can see them. |
+| `picks` | Read (the app adds them) for Home's momentum and rivals; real picks from the backend are added too, demo picks never |
+| `profiles` | Read only: `account_type = 'business'` rows are the businesses to score, monitor and check stock for |
+| `saved_spots` | Not touched |
+
+Ruth's monitor and advisor need her tables (`supabase/migrations/20261025000000_competitor_monitoring.sql`); when they
+aren't in the project the script skips those two steps and says so. With them, it creates her `businesses` row for
+each business account (owner = that profile's user). Square stock goes to one business (`--square-business`, or the
+only one); public "fresh in" alerts only with `--share-stock-alerts`. Home's insights are printed (Lovable has no
+table for them yet). It exits non-zero if any Supabase write fails.
 
 ### Tests
 

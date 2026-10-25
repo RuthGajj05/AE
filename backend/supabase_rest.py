@@ -1,4 +1,4 @@
-"""Supabase's REST API with the server key, for store.py only (tables: supabase/migrations/*_crumbs.sql).
+"""Supabase's REST API with the server key, for store.py only (writes the Lovable app's tables).
 
 On when SUPABASE_URL and a server key are set: SUPABASE_SERVICE_ROLE_KEY (a legacy service_role JWT or an sb_secret_
 key) or SUPABASE_SECRET_KEY. The key bypasses row level security, so it stays in backend/.env, never in lovable-app/.
@@ -75,34 +75,37 @@ def upsert(table: str, rows: dict | list[dict], *, on_conflict: str, ignore_dupl
         return False
 
 
-def insert(table: str, rows: dict | list[dict]) -> bool:
+def insert(table: str, rows: dict | list[dict], *, returning: bool = False):
+    """True (or the new rows, with returning=True) on success; False / None when off or failed."""
     rows = rows if isinstance(rows, list) else [rows]
     if not rows or not configured():
-        return False
+        return None if returning else False
     try:
-        resp = _http().post(f"{url()}/rest/v1/{table}", json=rows, headers=_headers("return=minimal"))
+        resp = _http().post(f"{url()}/rest/v1/{table}", json=rows,
+                            headers=_headers("return=representation" if returning else "return=minimal"))
         resp.raise_for_status()
-        return True
+        return resp.json() if returning else True
     except httpx.HTTPError as e:
         _fail(f"insert {table}", e)
-        return False
+        return None if returning else False
 
 
-def update(table: str, filters: dict, fields: dict) -> bool:
-    """PATCH every row matching PostgREST filters, e.g. {"cuisine": "eq.sushi"}."""
+def delete(table: str, filters: dict) -> bool:
+    """DELETE every row matching PostgREST filters, e.g. {"spot_id": "in.(a,b)"}."""
     if not configured():
         return False
     try:
-        resp = _http().patch(f"{url()}/rest/v1/{table}", params=filters, json=fields, headers=_headers("return=minimal"))
+        resp = _http().delete(f"{url()}/rest/v1/{table}", params=filters, headers=_headers("return=minimal"))
         resp.raise_for_status()
         return True
     except httpx.HTTPError as e:
-        _fail(f"update {table}", e)
+        _fail(f"delete {table}", e)
         return False
 
 
-def select(table: str, params: dict) -> list[dict] | None:
-    """Rows, or None when Supabase is off or the read failed (callers fall back to SQLite)."""
+def select(table: str, params: dict, *, quiet: bool = False) -> list[dict] | None:
+    """Rows, or None when Supabase is off or the read failed (callers fall back to SQLite). quiet: a failure (e.g.
+    a table this project doesn't have) is not counted in `errors`."""
     if not configured():
         return None
     try:
@@ -110,5 +113,6 @@ def select(table: str, params: dict) -> list[dict] | None:
         resp.raise_for_status()
         return resp.json()
     except httpx.HTTPError as e:
-        _fail(f"select {table}", e)
+        if not quiet:
+            _fail(f"select {table}", e)
         return None
