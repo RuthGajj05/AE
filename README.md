@@ -105,6 +105,31 @@ Trade-off: the competitor shortlist is chosen from less context than the default
 
 Run just the competitor part with `python agent/fast_competitors.py "Test Bakery" bakery "Capitol Hill, Seattle"`.
 
+### Email the report
+
+Add `--email you@example.com` to send the finished report as an HTML email (plain-text version included):
+
+```sh
+.venv/bin/python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv --fast --email owner@example.com
+```
+
+Preview it without sending anything (writes `reports/email-preview.html`): add `--email-preview`.
+Send a saved report later: `python agent/notify.py reports/<file>-advisor.json owner@example.com`.
+
+Setup, in `.env` (any SMTP provider works; the Gmail example):
+
+```
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=<an app password>      # Google Account > Security > 2-Step Verification > App passwords. Never your real password.
+# optional: SMTP_HOST=smtp.gmail.com  SMTP_PORT=587  EMAIL_FROM="LocalEdge <you@gmail.com>"
+```
+
+Notes:
+- The report is saved before the email is sent, so a mail problem never loses it.
+- Exactly one recipient; lists and anything that could inject headers are rejected.
+- Report text comes from web pages and model output, so it is HTML-escaped. No tracking pixels or links.
+- Tests (no network, SMTP mocked): `python tests/test_notify.py`.
+
 ### Pulling sales straight from Square or Toast
 
 Instead of a CSV, pass `--sales square` or `--sales toast` (and optionally `--days 56`) to pull item-level sales from the POS API. Add the credentials to `.env`:
