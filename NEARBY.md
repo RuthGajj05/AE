@@ -12,6 +12,10 @@ A working private prototype for small-business owners: enter your website and on
 
 The separately labeled Seattle bakery example is a saved research example. It does not run a fresh scan. Live errors never silently fall back to that example.
 
+## Inventory with Square
+
+Open **Inventory** to track stock by location. Search item variations, filter low or missing stock, set browser-local low-stock thresholds, and export a CSV. The explicit sample works without credentials. Connect a Square sandbox account with a server-side `SQUARE_ACCESS_TOKEN`; see [Square setup and data semantics](SQUARE.md). Counts are read-only snapshots refreshed on request. This is a single-merchant connection, not multi-business OAuth onboarding.
+
 ## Optional business questionnaire
 
 Owners can describe their business type and location, products or services, target customers, existing offers or marketing, and constraints such as time, budget, or capacity. The goal field explains what they want to improve. Every questionnaire answer is optional; the business website and at least one competitor website are still required.

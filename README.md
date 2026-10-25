@@ -2,7 +2,7 @@
 
 ## Nearby prototype
 
-Nearby helps small-business owners compare their website with one to three competitors, review recommendations with sources, and edit the accompanying drafts.
+Nearby helps small-business owners compare their website with one to three competitors, review recommendations with sources, and edit the accompanying drafts. It also has a Square inventory workspace for stock by location.
 
 ### Run locally
 
@@ -26,11 +26,15 @@ Open the local URL printed by the dev server. The Seattle bakery example works w
 - Editable drafts with browser autosave, copy, and Markdown export, including the submitted business brief.
 - Explicit missing-evidence, stale-source, and provider-error handling.
 
+### Square inventory
+
+Open **Inventory** to explore fictional sample stock or connect a Square sandbox account. The screen supports location selection, product/SKU search, low-stock flags, browser-local thresholds, refresh, and CSV export. It reads Square counts without changing them. Live counts require server-side `SQUARE_ACCESS_TOKEN` and `SQUARE_ENVIRONMENT=sandbox`; see [Square setup](SQUARE.md). This is a single-merchant prototype.
+
 ### Checks
 
 ```sh
 npx tsc --noEmit
-node --test tests/backend.test.mjs
+node --test tests/backend.test.mjs tests/inventory.test.mjs
 npm run build
 ```
 
@@ -38,6 +42,6 @@ npm run build
 
 The questionnaire is optional. Owners still need their website and one to three competitor websites. Answers help tailor recommendations to the owner's goal and constraints; they are self-reported information, not independently verified facts.
 
-The prototype is intended for local use or a private Sites deployment. The research API relies on the private Sites access boundary; add server-side authentication and durable usage limits before deploying it publicly elsewhere. This repository contains no live Site identity or API credential. Form inputs, reports and draft edits save in the browser. URLs, goals and questionnaire answers are sent to Claude only when research is submitted; do not enter customer personal data. Drafts are never emailed or posted automatically.
+The prototype is intended for local use or a private Sites deployment. The research and inventory APIs rely on the private Sites access boundary; add server-side authentication and durable usage limits before deploying it publicly elsewhere. This repository contains no live Site identity or API credential. Form inputs, reports and draft edits save in the browser. URLs, goals and questionnaire answers are sent to Claude only when research is submitted; do not enter customer personal data. Drafts are never emailed or posted automatically.
 
 See [the implementation and setup guide](NEARBY.md), [backend checks](tests/README.md), and [the original project meeting notes](thought%20overview).
