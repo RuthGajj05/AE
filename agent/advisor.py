@@ -4,6 +4,7 @@ recommendations specific to what this business lacks or could change.
 
 Usage:
     python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv
+    python agent/advisor.py "My Cafe" cafe "Ballard, Seattle" --sales square
 """
 
 import argparse
@@ -19,6 +20,7 @@ from pydantic import BaseModel, Field
 
 import business_agent
 import competitor_agent
+import pos
 from agent_loop import MODEL
 
 
@@ -50,12 +52,24 @@ ADVISOR_SYSTEM = """You advise the owner of a small, brick-and-mortar business. 
 - The sales data may be a sample; treat it as the owner's real data."""
 
 
-def run(business: str, business_type: str, location: str, sales_csv: str, website: str | None = None) -> dict:
+def load_sales(source: str, days: int) -> dict:
+    """`source` is "square", "toast", or the path to a sales CSV export."""
+    if source == "square":
+        return business_agent.analyze_rows(pos.fetch_square(days))
+    if source == "toast":
+        return business_agent.analyze_rows(pos.fetch_toast(days))
+    return business_agent.analyze_sales(source)
+
+
+def run(
+    business: str, business_type: str, location: str, sales_source: str,
+    website: str | None = None, days: int = 56,
+) -> dict:
     start = time.monotonic()
     with ThreadPoolExecutor(max_workers=3) as pool:
         competitors_f = pool.submit(competitor_agent.run, business, business_type, location)
         presence_f = pool.submit(business_agent.research_presence, business, location, website)
-        sales_f = pool.submit(business_agent.analyze_sales, sales_csv)
+        sales_f = pool.submit(load_sales, sales_source, days)
         sales, presence = sales_f.result(), presence_f.result()
         competitors = competitors_f.result()
     print(f"[advisor] research done in {time.monotonic() - start:.0f}s, writing advice...", file=sys.stderr)
@@ -103,11 +117,15 @@ def main() -> None:
     parser.add_argument("business", help="Business name")
     parser.add_argument("business_type", help="e.g. bakery, dog groomer, cafe")
     parser.add_argument("location", help="Neighborhood and city, e.g. 'Ballard, Seattle'")
-    parser.add_argument("--sales", required=True, help="Square 'Items' sales export (CSV)")
+    parser.add_argument(
+        "--sales", required=True,
+        help="'square' or 'toast' to pull from the POS API (credentials in .env), or a path to a sales CSV export",
+    )
+    parser.add_argument("--days", type=int, default=56, help="Days of POS sales to pull (default 56)")
     parser.add_argument("--website", help="The business's website, if it has one")
     args = parser.parse_args()
 
-    report = run(args.business, args.business_type, args.location, args.sales, args.website)
+    report = run(args.business, args.business_type, args.location, args.sales, args.website, args.days)
 
     competitor_agent.REPORTS_DIR.mkdir(exist_ok=True)
     slug = "".join(c if c.isalnum() else "-" for c in args.business.lower()).strip("-")

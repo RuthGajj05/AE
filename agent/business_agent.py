@@ -26,7 +26,9 @@ from competitor_agent import read_pages, search_web
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
-def _money(s: str) -> float:
+def _money(s: str | float) -> float:
+    if isinstance(s, (int, float)):
+        return float(s)
     return float(s.replace("$", "").replace(",", "").strip() or 0)
 
 
@@ -37,9 +39,13 @@ def _hhmm(minutes: float) -> str:
 def analyze_sales(csv_path: str) -> dict:
     """Summarize a Square "Items" export with columns Date, Time, Item, Qty, Gross Sales (Category optional)."""
     with open(csv_path, newline="") as f:
-        rows = list(csv.DictReader(f))
+        return analyze_rows(list(csv.DictReader(f)))
+
+
+def analyze_rows(rows: list[dict]) -> dict:
+    """Summarize item-level sales rows (from a CSV export or pos.fetch_square/fetch_toast)."""
     if not rows:
-        raise ValueError(f"No rows in {csv_path}")
+        raise ValueError("No sales rows to analyze")
 
     days: set[str] = set()
     day_revenue: dict[str, float] = defaultdict(float)
@@ -55,7 +61,7 @@ def analyze_sales(csv_path: str) -> dict:
         d = r["Date"]
         t = datetime.strptime(r["Time"], "%H:%M:%S")
         mins = t.hour * 60 + t.minute
-        qty, revenue = int(float(r["Qty"])), _money(r["Gross Sales"])
+        qty, revenue = float(r["Qty"]), _money(r["Gross Sales"])
         days.add(d)
         day_revenue[d] += revenue
         day_first_sale[d] = min(day_first_sale.get(d, 24 * 60), mins)
@@ -91,7 +97,7 @@ def analyze_sales(csv_path: str) -> dict:
             "item": name,
             "category": it["category"],
             "avg_price": round(it["revenue"] / it["qty"], 2),
-            "units": it["qty"],
+            "units": round(it["qty"], 2),
             "revenue": round(it["revenue"], 2),
             "revenue_share_pct": round(100 * it["revenue"] / total, 1),
             "avg_units_per_open_day": round(it["qty"] / n_days, 1),
