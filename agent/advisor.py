@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 import business_agent
 import competitor_agent
 import fast_competitors
+import notify
 import pos
 from agent_loop import MODEL
 
@@ -138,6 +139,8 @@ def main() -> None:
     )
     parser.add_argument("--days", type=int, default=56, help="Days of POS sales to pull (default 56)")
     parser.add_argument("--website", help="The business's website, if it has one")
+    parser.add_argument("--email", metavar="ADDRESS", help="Email the finished report to this address (SMTP settings in .env, see README)")
+    parser.add_argument("--email-preview", action="store_true", help="With --email: write an HTML preview to reports/ instead of sending")
     parser.add_argument("--fast", action="store_true", help="Much faster: parallel per-competitor research and a faster model")
     args = parser.parse_args()
 
@@ -154,6 +157,13 @@ def main() -> None:
         impact = f"~${r['est_monthly_impact_usd']:,.0f}/mo" if r["est_monthly_impact_usd"] else "impact n/a"
         print(f"- [{r['category']}] {r['title']} ({impact}, {r['confidence']} confidence)")
     print(f"\nSaved to {out}")
+
+    if args.email:  # the report is already saved, so an email problem never loses it
+        try:
+            print(notify.email_report(report, args.email, competitor_agent.REPORTS_DIR if args.email_preview else None))
+        except Exception as e:
+            print(f"Could not email the report: {e}", file=sys.stderr)
+            sys.exit(1)
 
 
 if __name__ == "__main__":
