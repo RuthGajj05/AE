@@ -2,8 +2,8 @@
 
 Two apps in one Vite project:
 
-- **crumbs** (`/`, the main app): a phone-style map of Capitol Hill food spots. Google Map with honey pins, a card
-  for the tapped spot, and a 5-tab nav (Home, Explore, Map, Saved, You; only Map is built). Code in `src/crumbs/`.
+- **crumbs** (`/`, the main app): a phone-style app for Capitol Hill food spots, one nav for every account:
+  **Home** (business dashboard), **Alerts**, **Map** (center), **Saved**, **You**. Code in `src/crumbs/`.
 - **LocalEdge** (`/localedge.html`): the competitor dashboard below. Code in `src/App.jsx` and `src/components/`.
 
 ## crumbs: Google Maps key
@@ -26,8 +26,15 @@ cp .env.example .env.local   # then paste your key after VITE_GOOGLE_MAPS_API_KE
   % positive.
 - Tapping a spot opens **Go here**: dotted walk on the map, stats, and a Google Maps link that saves an anonymous
   pick (localStorage for now).
-- **You** tab is the business side: **Rivals** (picks lost and why) and **Insights** (breakdown vs the area), from
-  `src/crumbs/data/business.json` plus this browser's picks.
+- **Accounts** (demo, localStorage): Member or Business. Switch in **You → Switch account type**, or tap
+  **I run a spot** on Home to run the short business onboarding. Businesses land on Home, Members on the Map.
+- **Home** is the business side: ring-style **Insights** (Reputation, Momentum, Edge, breakdown vs the area, Biggest
+  drag, The gap) and **Rivals** (picks lost and why), from the backend or `src/crumbs/data/business.json` plus this
+  browser's picks. Members see it locked.
+- **Alerts**: nearby changes (fresh stock, top rated, price, new spots) plus owner alerts for businesses, from
+  `GET /api/alerts` (backend demo set when it has none yet, `src/crumbs/data/alerts.json` when it's down). Tap opens
+  the spot's Go here sheet. Unread count on the tab.
+- **Saved**: spots saved from Go here (localStorage). **You**: profile, favorite foods, alert settings.
 - **Sharing the dev server** (tunnel link or local network): pages load for anyone, but `/api` only answers on this
   laptop, so shared viewers see sample data and can't spend the backend's API credits. To let them reach the backend
   on purpose, start the dev server with `SHARE_API=1 npm run dev`.

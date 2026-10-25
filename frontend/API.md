@@ -167,7 +167,7 @@ Tapping **Go here** saves an anonymous pick with `recordPick()` (`places.js`). T
 { "cuisine": "sushi", "chosenSpotId": "sushi-hikari", "comparedSpotIds": ["sushi-hikari", "sushi-umi", "sushi-nori-house", "sushi-pike-roll"], "timestamp": "2026-10-25T21:40:46.404Z" }
 ```
 
-### Business report (You tab: Rivals + Insights)
+### Business report (Home tab: Insights + Rivals)
 
 `getBusinessReport()` builds it from `src/crumbs/data/business.json` (a made-up shop, Tamago Sushi), the sushi
 sample data and this browser's pick events: each local sushi pick counts as a pick lost to the chosen spot.
@@ -185,3 +185,22 @@ biggest drag vs the area average, and where you're #1. Proposed `GET /api/busine
 ```
 
 The backend only needs to send those counts plus the cuisine data above; gaps and wording are worked out in the app.
+
+### Alerts (Alerts tab)
+
+The frontend follows the backend's contract (`backend/API.md` → Alerts on the `crumbs-backend` branch):
+
+- `GET /api/alerts?audience=consumer&lat=&lng=&radiusMi=1` for everyone; business accounts also call
+  `GET /api/alerts?audience=business&businessId=biz-tamago` (the sample shop until onboarding registers the business
+  with `POST /api/business`). The two lists are merged, newest first.
+- A list that comes back empty is asked again with `demo=true`, and the feed shows "sample data". If the backend is
+  down, `src/crumbs/data/alerts.json` is used (same fields; times are shifted so the newest is 12 minutes old).
+- Tapping an alert calls `POST /api/alerts/{id}/read` and keeps a copy in `localStorage` (`crumbs.alertsRead`),
+  since consumer read flags are shared on the backend.
+- Fields used: `id, kind, audience, spotId, cuisine, title, detail, createdAt, read` (`demo` marks sample alerts).
+  `spotId` + `cuisine` open that spot's Go here sheet; `spotId: null` opens the food type.
+
+### Local-only (no backend yet)
+
+`localStorage` keys: `crumbs.account` (Member/Business, profile, favorite foods, alert settings, the business's spot),
+`crumbs.saved` + `crumbs.savedSpots` (Saved tab), `crumbs.picks` (Go here picks, also sent to `POST /api/picks`).
