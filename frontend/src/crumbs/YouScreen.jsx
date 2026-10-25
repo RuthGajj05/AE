@@ -1,3 +1,4 @@
+import { signOut, useAuth } from './auth.js'
 import { ALERT_KINDS, AREAS, alertKindOn, initials, isBusiness, useAccount } from './account.js'
 import { FoodIcon } from './foodIcons.jsx'
 import { IconChevron } from './icons.jsx'
@@ -7,6 +8,7 @@ import './you.css'
 /** You tab: profile and settings. Insights and Rivals live on Home. */
 export function YouScreen() {
   const { account, update, startOnboarding } = useAccount()
+  const { enabled: authOn, user } = useAuth()
   const business = isBusiness(account)
   const kinds = ALERT_KINDS.filter((k) => business || k.audience === 'consumer')
   const setBusiness = (patch) => update({ business: { ...account.business, ...patch } })
@@ -38,6 +40,23 @@ export function YouScreen() {
       </header>
 
       <div className="you-rows">
+        {authOn && user && (
+          <div className="you-row is-static">
+            <span className="you-row-title">Signed in</span>
+            <span className="you-signed">
+              {user.email}
+              <button
+                className="you-signout"
+                onClick={async () => {
+                  await signOut()
+                  update({ type: 'consumer', business: null })
+                }}
+              >
+                Sign out
+              </button>
+            </span>
+          </div>
+        )}
         <Row title="Edit profile" detail={`${account.name} · ${account.homeArea}`}>
           <label className="you-field">
             <span>Name</span>

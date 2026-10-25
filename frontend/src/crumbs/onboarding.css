@@ -183,3 +183,21 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+.onb-notice,
+.onb-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.onb-notice {
+  background: var(--pale);
+}
+
+.onb-error {
+  background: #fde8e4;
+  color: #8a2a1c;
+}

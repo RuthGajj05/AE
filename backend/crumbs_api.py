@@ -3,10 +3,11 @@ turns HTTPException into that shape."""
 
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 import alerts
+import auth
 import config
 import cuisines
 import demo
@@ -127,10 +128,12 @@ class OnboardIn(BaseModel):
 
 
 @router.post("/business/onboard")
-def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Query(False, alias="demo")):
+def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Query(False, alias="demo"),
+            user: dict | None = Depends(auth.current_user)):
     cuisine = _cuisine(body.cuisine)
     if _demo(demo_flag):
         return {"businessId": demo.BUSINESS_ID, "status": "complete", "demo": True}
+    auth.require_user(user)
     if not body.placeId and not body.name:
         raise HTTPException(400, "Tell us the business name, or pick it from search.")
     try:
@@ -141,7 +144,7 @@ def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Quer
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
-    settings = {"share_stock_alerts": int(body.shareStockAlerts)}
+    settings = {"share_stock_alerts": int(body.shareStockAlerts), "owner_user_id": user["id"] if user else None}
     if body.lowStockThreshold is not None:
         settings["low_stock_threshold"] = body.lowStockThreshold
     store.update_business(business_id, **settings)
@@ -154,7 +157,10 @@ def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Quer
 
 
 @router.get("/business/{business_id}/insights")
-def business_insights(business_id: str, demo_flag: bool = Query(False, alias="demo")):
+def business_insights(business_id: str, demo_flag: bool = Query(False, alias="demo"),
+                      user: dict | None = Depends(auth.current_user)):
+    if not _demo(demo_flag) and store.get_business(business_id) is not None:
+        auth.check_owner(store.get_business(business_id), user)
     result = pipeline.insights(demo.BUSINESS_ID if _demo(demo_flag) else business_id)
     if result is None:
         raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
@@ -162,28 +168,39 @@ def business_insights(business_id: str, demo_flag: bool = Query(False, alias="de
 
 
 @router.get("/business/{business_id}/rivals")
-def business_rivals(business_id: str, days: int = Query(7, ge=1, le=90), demo_flag: bool = Query(False, alias="demo")):
+def business_rivals(business_id: str, days: int = Query(7, ge=1, le=90), demo_flag: bool = Query(False, alias="demo"),
+                    user: dict | None = Depends(auth.current_user)):
+    if not _demo(demo_flag) and store.get_business(business_id) is not None:
+        auth.check_owner(store.get_business(business_id), user)
     result = pipeline.rivals(demo.BUSINESS_ID if _demo(demo_flag) else business_id, days)
     if result is None:
         raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
     return result
 
 
+# ---------- signed-in owner ----------
+
+@router.get("/me")
+def me(user: dict | None = Depends(auth.current_user)):
+    """The signed-in owner and their spot, so a new device can restore the business account."""
+    auth.require_user(user)
+    b = store.business_for_owner(user["id"]) if user else None
+    business = {"id": b["id"], "name": b["name"], "address": b["address"], "cuisine": b["business_type"]} if b else None
+    return {"user": user, "authEnabled": auth.enabled(), "business": business}
+
+
 # ---------- advisor reports (Ruth's advisor) ----------
 
 @router.get("/business/{business_id}/report")
-def business_report(business_id: str, demo_flag: bool = Query(False, alias="demo")):
-    b = None if _demo(demo_flag) else store.get_business(business_id)
-    if b is None and not _demo(demo_flag):
-        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+def business_report(business_id: str, demo_flag: bool = Query(False, alias="demo"),
+                    user: dict | None = Depends(auth.current_user)):
+    b = None if _demo(demo_flag) else auth.check_owner(store.get_business(business_id), user)
     return reports.view(business_id, demo=_demo(demo_flag) or bool(b and b["demo"]))
 
 
 @router.post("/business/{business_id}/report", status_code=202)
-def refresh_business_report(business_id: str, background: BackgroundTasks):
-    b = store.get_business(business_id)
-    if b is None:
-        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+def refresh_business_report(business_id: str, background: BackgroundTasks, user: dict | None = Depends(auth.current_user)):
+    b = auth.check_owner(store.get_business(business_id), user)
     if b["demo"]:
         return {"businessId": business_id, "status": "complete", "demo": True}
     if not all(config.has_key(k) for k in pipeline.LIVE_KEYS):
@@ -205,6 +222,7 @@ def list_alerts(
     radiusMi: float = Query(1.0, ge=0.1, le=5),
     cuisine: str | None = None,
     demo_flag: bool = Query(False, alias="demo"),
+    user: dict | None = Depends(auth.current_user),
 ):
     if cuisine:
         _cuisine(cuisine)
@@ -213,6 +231,8 @@ def list_alerts(
     if audience == "consumer" and (lat is None or lng is None):
         lat, lng = config.CAPITOL_HILL["lat"], config.CAPITOL_HILL["lng"]
     business = store.get_business(businessId) if businessId else None
+    if audience == "business" and business is not None:
+        auth.check_owner(business, user)
     if audience == "business" and business is None and not _demo(demo_flag):
         raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
     if business and (lat is None or lng is None) and business["lat"] is not None:
@@ -248,10 +268,9 @@ def _refresh_alerts(business_id: str, monitor: bool, stock: bool) -> None:
 
 
 @router.post("/business/{business_id}/alerts/refresh")
-def refresh_alerts(business_id: str, background: BackgroundTasks, monitor: bool = True, stock: bool = True):
-    b = store.get_business(business_id)
-    if b is None:
-        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+def refresh_alerts(business_id: str, background: BackgroundTasks, monitor: bool = True, stock: bool = True,
+                   user: dict | None = Depends(auth.current_user)):
+    b = auth.check_owner(store.get_business(business_id), user)
     if b["demo"]:
         return {"status": "skipped", "demo": True}
     run_monitor = monitor and all(config.has_key(k) for k in pipeline.LIVE_KEYS)

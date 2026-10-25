@@ -252,6 +252,7 @@ _ADDED_COLUMNS = {
         "share_stock_alerts": "integer not null default 0",  # owner opted in to public fresh-stock alerts
         "low_stock_threshold": "real not null default 5",
         "supabase_business_id": "text",                     # Ruth's Supabase businesses.id, for the monitor
+        "owner_user_id": "text",                            # Supabase Auth user who onboarded it (auth.py)
     },
 }
 
@@ -283,6 +284,13 @@ def create_business(*, name: str, business_type: str, location: str, address: st
              f"spot-{business_id}", _dump(profile or {}), int(demo), stamp, stamp),
         )
     return business_id
+
+
+def business_for_owner(user_id: str) -> dict | None:
+    """The signed-in owner's most recently onboarded business."""
+    with _db() as db:
+        return _row(db.execute("select * from businesses where owner_user_id = ? and demo = 0 order by created_at desc limit 1",
+                               (user_id,)).fetchone())
 
 
 def list_businesses(*, include_demo: bool = False) -> list[dict]:

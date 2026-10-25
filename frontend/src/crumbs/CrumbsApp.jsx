@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { alertKindOn, isBusiness, useAccount } from './account.js'
 import { AccountProvider } from './AccountProvider.jsx'
+import { useAuth } from './auth.js'
+import { AuthProvider } from './AuthProvider.jsx'
 import { AlertsScreen } from './AlertsScreen.jsx'
 import { BottomNav } from './BottomNav.jsx'
 import { HomeScreen } from './HomeScreen.jsx'
 import { MapScreen } from './MapScreen.jsx'
+import { getMe } from './places.js'
 import { Onboarding } from './Onboarding.jsx'
 import { SavedScreen } from './SavedScreen.jsx'
 import { TABS } from './tabs.js'
@@ -20,14 +23,17 @@ const tabFromHash = (business) => {
 
 export default function CrumbsApp() {
   return (
-    <AccountProvider>
-      <Shell />
-    </AccountProvider>
+    <AuthProvider>
+      <AccountProvider>
+        <Shell />
+      </AccountProvider>
+    </AuthProvider>
   )
 }
 
 function Shell() {
-  const { account, onboarding } = useAccount()
+  const { account, update, onboarding } = useAccount()
+  const { user } = useAuth()
   const business = isBusiness(account)
   const [tab, setTab] = useState(() => tabFromHash(business))
   const businessNow = useRef(business)
@@ -38,6 +44,20 @@ function Shell() {
   useEffect(() => {
     businessNow.current = business
   })
+
+  // A signed-in owner on a new device (or after clearing the browser) gets their spot back from the backend.
+  const userId = user?.id
+  const hasBackendSpot = Boolean(account.business?.id)
+  useEffect(() => {
+    if (!userId || hasBackendSpot) return
+    let live = true
+    getMe().then((me) => live && me?.business && update({ type: 'business', business: me.business }))
+    return () => {
+      live = false
+    }
+    // update is recreated with the account; the user and whether the spot is known are what matter here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, hasBackendSpot])
 
   useEffect(() => {
     const onHash = () => setTab(tabFromHash(businessNow.current))

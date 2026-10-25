@@ -200,6 +200,18 @@ The frontend follows the backend's contract (`backend/API.md` → Alerts on the 
 - Fields used: `id, kind, audience, spotId, cuisine, title, detail, createdAt, read` (`demo` marks sample alerts).
   `spotId` + `cuisine` open that spot's Go here sheet; `spotId: null` opens the food type.
 
+### Sign-in (business owners)
+
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `frontend/.env.local` (see `.env.example`; the
+publishable key is safe in the browser, never the secret key). Then "I run a spot" asks for an email + password
+first (`src/crumbs/SignIn.jsx`, Supabase Auth via `src/crumbs/auth.js`). Signed in, every backend call carries
+`Authorization: Bearer <access token>`; `GET /api/me` restores the owner's spot on a new device; the You tab shows
+the email and Sign out (which also switches the account back to Member). Browsing never needs a sign-in. Without
+the two variables, sign-in is off and the app behaves as before.
+
+In the Supabase dashboard, set **Authentication → URL Configuration → Site URL** to the app's address (e.g.
+`http://localhost:5173`) so the email-confirmation link opens the app.
+
 ### Local-only (no backend yet)
 
 `localStorage` keys: `crumbs.account` (Member/Business, profile, favorite foods, alert settings, the business's spot),

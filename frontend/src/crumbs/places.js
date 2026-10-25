@@ -1,5 +1,6 @@
 // Everything the crumbs app loads or saves goes through this file: Google Places, the sample places and food
 // types, pick events, the business report, and (later) review scores from the backend. See API.md → "crumbs map".
+import { accessToken } from './auth.js'
 import { buildBusinessReport } from './businessReport.js'
 import alertData from './data/alerts.json'
 import businessData from './data/business.json'
@@ -17,10 +18,16 @@ export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '
 const API_ROOT = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '').replace(/\/api$/, '')
 export const API_BASE = `${API_ROOT}/api`
 
+/** The signed-in owner's token for business endpoints; nothing when signed out. */
+async function authHeaders() {
+  const token = await accessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 /** GET a backend endpoint as JSON, or null when the backend is down, slow or errors (callers fall back to samples). */
 async function apiGet(path) {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { signal: AbortSignal.timeout(4000) })
+    const res = await fetch(`${API_BASE}${path}`, { headers: await authHeaders(), signal: AbortSignal.timeout(4000) })
     return res.ok ? await res.json() : null
   } catch {
     return null
@@ -32,7 +39,7 @@ async function apiPostJson(path, body, timeoutMs = 10000) {
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     })
@@ -341,4 +348,9 @@ export function getAdvisorReport(businessId, { demo = false } = {}) {
 /** POST /api/business/{id}/report: start a fresh report. { status: 'running' } or null. */
 export function refreshAdvisorReport(businessId) {
   return apiPostJson(`/business/${encodeURIComponent(businessId)}/report`, {})
+}
+
+/** GET /api/me: { user, business } for the signed-in owner (business: their spot or null), or null. */
+export function getMe() {
+  return apiGet('/me')
 }

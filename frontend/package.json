@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
+    "@supabase/supabase-js": "2.117.3",
     "@vis.gl/react-google-maps": "^1.10.1",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",

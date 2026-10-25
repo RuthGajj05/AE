@@ -111,6 +111,19 @@ is stored; extra fields in the body are ignored.
 
 ## Business
 
+Business endpoints need a signed-in owner (Supabase Auth, email + password) whenever Supabase is configured
+(`SUPABASE_URL` plus a key; set `AUTH_DISABLED=1` to turn this off locally). The frontend sends the Supabase access
+token as `Authorization: Bearer <token>`; `backend/auth.py` checks it with Supabase (`GET /auth/v1/user`, cached for a
+minute). Onboarding records the signed-in user as the owner (`owner_user_id`). Report, insights, rivals, owner alerts
+and alert refresh answer only to that owner: signed out → `401`, someone else's business → `404` (same as missing).
+The demo business and `?demo=true` stay open, and consumer endpoints never need a sign-in.
+
+### `GET /api/me`
+
+→ `{ "user": { "id", "email" }, "authEnabled": true, "business": { "id", "name", "address", "cuisine" } | null }`
+
+The signed-in owner and their most recent spot, so a new device restores the business account. `401` when signed out.
+
 ### `GET /api/places/search?q=dicks broadway`
 
 Google Places Autocomplete when `GOOGLE_PLACES_API_KEY` is set, otherwise OpenStreetMap Nominatim; biased to
