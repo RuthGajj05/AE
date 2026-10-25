@@ -116,7 +116,7 @@ Add `--email you@example.com` to send the finished report as an HTML email (plai
 Preview it without sending anything (writes `reports/email-preview.html`): add `--email-preview`.
 Send a saved report later: `python agent/notify.py reports/<file>-advisor.json owner@example.com`.
 
-Setup, in `.env` (any SMTP provider works; the Gmail example):
+Setup, in `.env`. **Resend** (same keys the competitor alerts use) is used if set: `RESEND_API_KEY` and `RESEND_FROM` (Resend's test sender only delivers to your own account email until you verify a domain). Otherwise any SMTP provider works; the Gmail example:
 
 ```
 SMTP_USER=you@gmail.com
@@ -129,6 +129,24 @@ Notes:
 - Exactly one recipient; lists and anything that could inject headers are rejected.
 - Report text comes from web pages and model output, so it is HTML-escaped. No tracking pixels or links.
 - Tests (no network, SMTP mocked): `python tests/test_notify.py`.
+
+### Report-by-email API
+
+A small standalone service: a user enters their business and email, the report is researched in the background (fast mode, no sales file needed) and emailed when ready, so nobody waits on a loading screen.
+
+```sh
+.venv/bin/uvicorn api:app --app-dir agent --port 8100
+```
+
+| Endpoint | |
+|---|---|
+| `POST /api/report-email` | `{business, business_type, location, email, website?}` → `202 {id, status: "running"}` right away |
+| `GET /api/report-email/{id}` | `{status: running/done/error, emailed, error, report}` (the report is included when done) |
+| `GET /api/health` | shows whether email is configured |
+
+Errors are `{"error": "plain-English message"}`. Without sales data the advice rests on competitor research and the owner's online presence, and dollar estimates are left blank.
+
+Because this can spend API credit and send email, it is rate limited: one report per address per 10 minutes (`EMAIL_COOLDOWN_SECS`) and 30 per hour overall (`MAX_REPORTS_PER_HOUR`). Jobs are kept in memory, so they are lost on restart (the report JSON is also saved in `reports/`). Tests (mocked, no cost, nothing sent): `python tests/test_api.py`.
 
 ### Pulling sales straight from Square or Toast
 
