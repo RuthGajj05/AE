@@ -7,7 +7,7 @@ const DEFAULT_AREA = { label: 'Capitol Hill', ...CAPITOL_HILL, current: false }
  * The alerts feed for the whole app (the Alerts tab and its unread badge). Uses the user's location only if they
  * already allowed it, or tap "Use my location"; otherwise Capitol Hill.
  */
-export function useAlerts(audience) {
+export function useAlerts(audience, businessId) {
   const [area, setArea] = useState(DEFAULT_AREA)
   const [feed, setFeed] = useState({ alerts: [], isSample: true, loading: true })
 
@@ -37,11 +37,11 @@ export function useAlerts(audience) {
 
   useEffect(() => {
     let live = true
-    getAlerts({ lat: area.lat, lng: area.lng, audience }).then((r) => live && setFeed({ ...r, loading: false }))
+    getAlerts({ lat: area.lat, lng: area.lng, audience, businessId }).then((r) => live && setFeed({ ...r, loading: false }))
     return () => {
       live = false
     }
-  }, [area, audience])
+  }, [area, audience, businessId])
 
   const markRead = useCallback((id) => {
     markAlertRead(id)

@@ -4,8 +4,10 @@ import './home.css'
 import { IconLock } from './icons.jsx'
 import { formatMetric, gapScore, isScore, isWait, mentionText, metricValue, scaleMax } from './metrics.js'
 import { getBusinessReport } from './places.js'
+import { ReportView } from './ReportView.jsx'
 
 const VIEWS = [
+  { id: 'report', label: 'Report' },
   { id: 'insights', label: 'Insights' },
   { id: 'rivals', label: 'Rivals' },
 ]
@@ -15,7 +17,11 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 /** Home: the business dashboard. Consumers see it locked, with a way into business onboarding. */
 export function HomeScreen() {
   const { account, startOnboarding } = useAccount()
-  return isBusiness(account) ? <BusinessHome name={account.business.name} /> : <LockedHome onStart={startOnboarding} />
+  return isBusiness(account) ? (
+    <BusinessHome name={account.business.name} businessId={account.business.id} />
+  ) : (
+    <LockedHome onStart={startOnboarding} />
+  )
 }
 
 function Switch({ view, onView, disabled = false }) {
@@ -37,8 +43,8 @@ function Switch({ view, onView, disabled = false }) {
   )
 }
 
-function BusinessHome({ name }) {
-  const [view, setView] = useState('insights')
+function BusinessHome({ name, businessId }) {
+  const [view, setView] = useState('report')
   const [report, setReport] = useState(null)
 
   // Mounted fresh on every visit to the tab, so new Go-here picks show up.
@@ -55,7 +61,9 @@ function BusinessHome({ name }) {
   return (
     <div className="biz">
       <Switch view={view} onView={setView} />
-      {report && (view === 'insights' ? <Insights report={report} name={name} /> : <Rivals report={report} name={name} />)}
+      {view === 'report' && <ReportView businessId={businessId} />}
+      {report && view === 'insights' && <Insights report={report} name={name} />}
+      {report && view === 'rivals' && <Rivals report={report} name={name} />}
     </div>
   )
 }
@@ -267,7 +275,7 @@ function LockedHome({ onStart }) {
   return (
     <div className="biz locked-home">
       <div className="locked-preview" aria-hidden="true" inert>
-        <Switch view="insights" disabled />
+        <Switch view="report" disabled />
         <section className="whoop is-skeleton">
           <span className="sk sk-line" style={{ width: '38%' }} />
           <span className="sk sk-title" />
@@ -299,7 +307,7 @@ function LockedHome({ onStart }) {
           <IconLock />
         </span>
         <h2 id="locked-title">Business tools</h2>
-        <p>Insights and rivals are for business members.</p>
+        <p>Your report, insights and rivals are for business members.</p>
         <button className="locked-btn" onClick={onStart}>
           I run a spot
         </button>

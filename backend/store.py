@@ -189,6 +189,19 @@ create table if not exists inventory_snapshots (
   primary key (business_id, variation_id)
 );
 
+-- Tailored advice from Ruth's advisor (agent/advisor.py), one row per run.
+create table if not exists advisor_reports (
+  id text primary key,
+  business_id text not null references businesses (id) on delete cascade,
+  status text not null default 'running',  -- running | complete | failed
+  error text,
+  created_at text not null,
+  finished_at text,
+  supabase_report_id text,                 -- the copy in Ruth's Supabase advisor_reports, when linked
+  data text                                -- the advisor's full report (JSON)
+);
+create index if not exists advisor_reports_business_idx on advisor_reports (business_id, created_at);
+
 create table if not exists business_goals (
   business_id text not null references businesses (id) on delete cascade,
   goal text not null,
@@ -571,3 +584,28 @@ def save_inventory(business_id: str, items: list[dict]) -> None:
             "insert or replace into inventory_snapshots (business_id, variation_id, item_name, quantity, synced_at) values (?, ?, ?, ?, ?)",
             [(business_id, i["variationId"], i["name"], i["quantity"], stamp) for i in items],
         )
+
+
+# ---------- advisor reports (Ruth's advisor) ----------
+
+def start_report(business_id: str) -> str:
+    report_id = f"rep-{uuid.uuid4().hex[:12]}"
+    with _db() as db:
+        db.execute("insert into advisor_reports (id, business_id, status, created_at) values (?, ?, 'running', ?)",
+                   (report_id, business_id, now()))
+    return report_id
+
+
+def finish_report(report_id: str, *, data: dict | None = None, error: str | None = None,
+                  supabase_report_id: str | None = None) -> None:
+    with _db() as db:
+        db.execute("update advisor_reports set status = ?, error = ?, finished_at = ?, data = ?, supabase_report_id = ?"
+                   " where id = ?",
+                   ("failed" if error else "complete", error, now(), _dump(data) if data is not None else None,
+                    supabase_report_id, report_id))
+
+
+def latest_report(business_id: str, *, complete_only: bool = False) -> dict | None:
+    query = "select * from advisor_reports where business_id = ?" + (" and status = 'complete'" if complete_only else "")
+    with _db() as db:
+        return _row(db.execute(query + " order by created_at desc limit 1", (business_id,)).fetchone())

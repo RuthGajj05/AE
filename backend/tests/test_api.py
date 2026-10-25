@@ -11,6 +11,7 @@ import collect
 import config
 import main
 import pipeline
+import reports
 import reviewer
 import store
 
@@ -133,7 +134,18 @@ def live(client, monkeypatch):
     monkeypatch.setattr(collect, "collect", fake_collect)
     monkeypatch.setattr(reviewer, "score_spot", fake_score)
     monkeypatch.setattr(pipeline.anthropic, "Anthropic", lambda: None)
+    monkeypatch.setattr(reports, "_advisor", lambda: FakeAdvisor)  # onboarding queues an advisor report
     return client
+
+
+class FakeAdvisor:
+    """Ruth's advisor without network calls: returns the saved example report."""
+    calls = []
+
+    @staticmethod
+    def run(*args, **kwargs):
+        FakeAdvisor.calls.append((args, kwargs))
+        return reports.example_report()
 
 
 def test_live_spots_scored_then_cached(live):

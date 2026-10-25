@@ -261,6 +261,57 @@ function toSuggestion(raw, i) {
   return { id: `s${i}`, title, why, evidence: text(pick(raw, 'evidence', 'because')), impact: impact(pick(raw, 'impact', 'priority', 'level')) }
 }
 
+const money = (usd) => (typeof usd === 'number' && usd > 0 ? `~$${Math.round(usd).toLocaleString()}/mo` : '')
+
+/** Same-named items priced at 2+ shops → "Item: $min–$max (N shops)", the benchmark pattern the range chart reads. */
+function benchmarksFrom(competitors) {
+  const byItem = new Map()
+  for (const c of competitors) {
+    for (const point of texts(pick(c, 'price_points', 'pricePoints'))) {
+      const [label, rest] = point.split(/:(.*)/s)
+      const price = dollars(rest ?? '')[0]
+      if (!rest || price === undefined) continue
+      const key = label.trim().toLowerCase()
+      const entry = byItem.get(key) ?? { label: capitalize(label.trim()), prices: new Map() }
+      if (!entry.prices.has(c.name)) entry.prices.set(c.name, price)
+      byItem.set(key, entry)
+    }
+  }
+  return [...byItem.values()]
+    .filter((e) => e.prices.size >= 2)
+    .map((e) => {
+      const prices = [...e.prices.values()]
+      const fmt = (n) => `$${n.toFixed(2).replace(/\.00$/, '')}`
+      return `${e.label}: ${fmt(Math.min(...prices))}–${fmt(Math.max(...prices))} (${e.prices.size} shops)`
+    })
+}
+
+/**
+ * Ruth's advisor report ({ advice, competitors: { competitors }, ... }, or the backend's /business/{id}/report view
+ * around it) → the scraper-report fields below: the snapshot is the summary, recommendations are the suggestions.
+ */
+function fromAdvisorReport(root) {
+  const advice = pick(root, 'advice')
+  const research = pick(root, 'competitors')
+  if (!isObject(advice) || !isObject(research)) return root
+  const competitors = list(pick(research, 'competitors'))
+  return {
+    ...root,
+    marketSummary: pick(advice, 'snapshot'),
+    competitors,
+    priceBenchmarks: benchmarksFrom(competitors),
+    insights: list(pick(advice, 'recommendations')).map((r) => ({
+      title: [text(pick(r, 'title')), money(pick(r, 'est_monthly_impact_usd'))].filter(Boolean).join(' · '),
+      why: text(pick(r, 'action')),
+      evidence: [pick(r, 'evidence_from_your_business'), pick(r, 'evidence_from_market'), pick(r, 'impact_math')]
+        .map(text)
+        .filter((t) => t && t !== 'none')
+        .join(' '),
+    })),
+    gapsAndCaveats: [...texts(pick(research, 'gaps_and_caveats')), ...texts(pick(advice, 'caveats'))],
+  }
+}
+
 export function toDashboard(raw, { source = 'url' } = {}) {
   // A bare array is a list of competitors; a backend wrapper ({ profile, report }) is unwrapped.
   let root = Array.isArray(raw) ? { competitors: raw } : isObject(raw) ? raw : {}
@@ -276,6 +327,7 @@ export function toDashboard(raw, { source = 'url' } = {}) {
     }
     root = { ...wrapped, business }
   }
+  root = fromAdvisorReport(root)
 
   const competitors = list(pick(root, 'competitors', 'nearby', 'nearbyBusinesses', 'businesses', 'results', 'places'))
     .map(toCompetitor)

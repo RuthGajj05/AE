@@ -133,16 +133,55 @@ Google results have `lat`/`lng` `null` (filled in on onboarding from the place i
   "goals": ["Shorter waits", "Rice"],
   "questionnaire": { "businessType": "", "location": "", "offerings": "", "customers": "", "currentApproach": "", "constraints": "" },
   "deepResearch": false,
+  "advisorReport": true,
   "shareStockAlerts": false,
   "lowStockThreshold": 5
 }
 ```
-→ `{ "businessId": "biz-3a621cbb88", "status": "queued" }`
+→ `{ "businessId": "biz-3a621cbb88", "status": "queued", "reportQueued": true }`
 
 Send `placeId` or `name` (+ `address`, and `lat`/`lng` from search when you have them). `questionnaire` uses Manny's
 fields from `lib/business-profile.ts`; all optional, blanks dropped. Scoring runs in the background: the area is
 scored (or read from the cache), and this business is linked to its spot if discovery found it, otherwise its own
 reviews are collected and scored. `deepResearch: true` also runs Ruth's full research for `gap` (several minutes).
+`advisorReport` (default `true`) also starts the owner's advisor report (below) when the live keys are set;
+`reportQueued` says whether it started.
+
+### `GET /api/business/{id}/report` and `POST /api/business/{id}/report`
+
+The owner's tailored report from Ruth's advisor (`agent/advisor.py`): sales analysis when Square is connected,
+one research agent per nearby competitor, the owner's online presence, product gaps sold by 2+ competitors, then
+recommendations with evidence and (with sales data) dollar estimates. A run takes about a minute in the background.
+
+`POST` starts a fresh report → `202 { "businessId", "status": "running", "reportId" }`. A request while one is
+running joins it. Needs `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` (503 otherwise).
+
+`GET` →
+
+```json
+{
+  "businessId": "biz-e98f620ed1", "status": "complete", "error": null, "reportId": "rep-23bc9cdb5bf9",
+  "createdAt": "2026-10-25T23:20:11+00:00", "demo": false,
+  "summary": {
+    "business": "Momiji", "location": "Capitol Hill, Seattle", "date": "2026-10-25",
+    "isDemoSales": false, "usedSales": false,
+    "snapshot": "Momiji has no sales data in this analysis, so …",
+    "recommendations": [{ "title": "…", "category": "marketing", "action": "…", "evidenceYours": "…",
+                          "evidenceMarket": "…", "monthlyImpactUsd": null, "impactMath": "…", "confidence": "medium" }],
+    "strengths": ["…"], "gapsVsCompetitors": ["…"], "caveats": ["…"],
+    "productGaps": [{ "product": "cappuccino", "competitorCount": 2, "competitors": ["…"], "needsConfirmation": true }],
+    "competitors": [{ "name": "Aoki Sushi & Grill", "address": "…", "rating": 4.6, "reviewCount": 312,
+                      "hours": "…", "pricePoints": ["…"] }]
+  },
+  "report": { "advice": { … }, "competitors": { "competitors": [ … ] }, "market_intelligence": { … } }
+}
+```
+
+`status` is `none` (no report yet), `running`, `complete` or `failed` (with a plain-English `error`; a run left
+`running` for 15 minutes counts as failed). While a new report runs, or after one fails, `summary`/`report` still
+show the last complete one. `report` is the advisor's full JSON, which `localedge.html?business={id}` renders.
+When the business is linked to Ruth's Supabase project (`supabase_business_id`), the report is also saved to its
+`advisor_reports`. `?demo=true` returns the saved Capitol Hill bakery example.
 
 ### `GET /api/business/{id}/insights`
 

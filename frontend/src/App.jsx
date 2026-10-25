@@ -13,28 +13,40 @@ const savedState = () => ({ status: 'ready', data: toDashboard(savedReport, { so
 
 function describeError(err) {
   if (err instanceof SyntaxError) return "The data source didn't send valid JSON."
-  if (err instanceof TypeError) return `Couldn't reach ${DATA_URL}. Is the backend running, and does it allow CORS?`
+  if (err instanceof TypeError) return `Couldn't reach ${SOURCE_URL}. Is the backend running, and does it allow CORS?`
   return err?.message || 'Something went wrong loading the data.'
 }
 
 const viewFromHash = () => (window.location.hash === '#/map' ? 'map' : 'dashboard')
 
+// ?business=<id> (linked from the crumbs Report tab) shows that business's latest advisor report from the backend.
+const BUSINESS_ID = new URLSearchParams(window.location.search).get('business')
+const SOURCE_URL = BUSINESS_ID ? `/api/business/${encodeURIComponent(BUSINESS_ID)}/report` : DATA_URL
+
+/** The backend's report view says when there is nothing to show yet. */
+function checkReportView(raw) {
+  if (!BUSINESS_ID || raw?.report) return raw
+  if (raw?.status === 'running') throw new Error('Your report is still being researched. Try again in a minute.')
+  if (raw?.status === 'failed') throw new Error(raw.error || "The research didn't finish. Try again from the app.")
+  throw new Error('There is no report for this business yet. Start one from the Report tab in the app.')
+}
+
 export default function App() {
   const [view, setView] = useState(viewFromHash)
-  const [state, setState] = useState(() => (DATA_URL ? { status: 'loading' } : savedState()))
+  const [state, setState] = useState(() => (SOURCE_URL ? { status: 'loading' } : savedState()))
   const [attempt, setAttempt] = useState(0)
   const [toast, setToast] = useState(null)
   const fileInput = useRef(null)
 
   useEffect(() => {
-    if (!DATA_URL) return
+    if (!SOURCE_URL) return
     const ctrl = new AbortController()
-    fetch(DATA_URL, { signal: ctrl.signal })
+    fetch(SOURCE_URL, { signal: ctrl.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`The data source answered with an error (${res.status}).`)
         return res.json()
       })
-      .then((raw) => setState({ status: 'ready', data: toDashboard(raw, { source: 'url' }) }))
+      .then((raw) => setState({ status: 'ready', data: toDashboard(checkReportView(raw), { source: 'url' }) }))
       .catch((err) => {
         if (!ctrl.signal.aborted) setState({ status: 'error', message: describeError(err) })
       })
@@ -54,7 +66,7 @@ export default function App() {
   }, [toast])
 
   const reload = () => {
-    if (!DATA_URL) return setState(savedState())
+    if (!SOURCE_URL) return setState(savedState())
     setState({ status: 'loading' })
     setAttempt((a) => a + 1)
   }

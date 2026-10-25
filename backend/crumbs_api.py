@@ -12,6 +12,7 @@ import cuisines
 import demo
 import geo
 import pipeline
+import reports
 import store
 
 router = APIRouter(prefix="/api")
@@ -118,6 +119,8 @@ class OnboardIn(BaseModel):
     goals: list[str] = Field(default_factory=list, max_length=10)
     questionnaire: Questionnaire = Field(default_factory=Questionnaire)
     deepResearch: bool = False
+    # Ruth's advisor: tailored recommendations from competitor research (about a minute, in the background)
+    advisorReport: bool = True
     # Public "fresh shipment" alerts from Square restocks; off unless the owner opts in. Counts are never public.
     shareStockAlerts: bool = False
     lowStockThreshold: float | None = Field(None, ge=0, le=100000)
@@ -143,7 +146,11 @@ def onboard(body: OnboardIn, background: BackgroundTasks, demo_flag: bool = Quer
         settings["low_stock_threshold"] = body.lowStockThreshold
     store.update_business(business_id, **settings)
     background.add_task(pipeline.score_business, business_id, body.deepResearch)
-    return {"businessId": business_id, "status": "queued"}
+    report_queued = body.advisorReport and all(config.has_key(k) for k in pipeline.LIVE_KEYS)
+    if report_queued:
+        report_id, _ = reports.start(business_id)
+        background.add_task(reports.run, business_id, report_id)
+    return {"businessId": business_id, "status": "queued", "reportQueued": report_queued}
 
 
 @router.get("/business/{business_id}/insights")
@@ -160,6 +167,31 @@ def business_rivals(business_id: str, days: int = Query(7, ge=1, le=90), demo_fl
     if result is None:
         raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
     return result
+
+
+# ---------- advisor reports (Ruth's advisor) ----------
+
+@router.get("/business/{business_id}/report")
+def business_report(business_id: str, demo_flag: bool = Query(False, alias="demo")):
+    b = None if _demo(demo_flag) else store.get_business(business_id)
+    if b is None and not _demo(demo_flag):
+        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+    return reports.view(business_id, demo=_demo(demo_flag) or bool(b and b["demo"]))
+
+
+@router.post("/business/{business_id}/report", status_code=202)
+def refresh_business_report(business_id: str, background: BackgroundTasks):
+    b = store.get_business(business_id)
+    if b is None:
+        raise HTTPException(404, "We couldn't find that business. Try onboarding it again.")
+    if b["demo"]:
+        return {"businessId": business_id, "status": "complete", "demo": True}
+    if not all(config.has_key(k) for k in pipeline.LIVE_KEYS):
+        raise HTTPException(503, "Reports need ANTHROPIC_API_KEY and TAVILY_API_KEY in backend/.env.")
+    report_id, already = reports.start(business_id)
+    if not already:
+        background.add_task(reports.run, business_id, report_id)
+    return {"businessId": business_id, "status": "running", "reportId": report_id}
 
 
 # ---------- alerts ----------

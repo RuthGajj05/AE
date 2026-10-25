@@ -1,0 +1,246 @@
+/* Report tab (Home): the owner's advisor report. Shared .biz and .biz-label live in crumbs.css. */
+
+.rep {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+.rep-note {
+  margin: 24px 4px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.rep-head {
+  margin: 16px 0 0;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.rep-eyebrow {
+  margin: 0;
+  color: var(--honey-milk);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rep-head h1 {
+  margin: 2px 0;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+.rep-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.rep-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+}
+
+.rep-status {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+}
+
+.rep-status.is-running::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--honey);
+  animation: rep-pulse 1.2s ease-in-out infinite;
+}
+
+.rep-status.is-failed {
+  color: #ffb4a8;
+}
+
+@keyframes rep-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rep-status.is-running::before {
+    animation: none;
+  }
+}
+
+.rep-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 14px;
+}
+
+.rep-btn {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--honey-milk);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rep-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.rep-btn:focus-visible,
+.rep-link:focus-visible,
+.rep summary:focus-visible {
+  outline: 2px solid var(--honey);
+  outline-offset: 2px;
+}
+
+.rep-link {
+  color: var(--honey-milk);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rep-snapshot {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--milk);
+  border: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.rep-recs,
+.rep-gaps,
+.rep-comps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rep-rec {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.rep-rec h3 {
+  margin: 6px 0 4px;
+  font-size: 16px;
+  text-wrap: balance;
+}
+
+.rep-rec p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rep-rec-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 12px;
+}
+
+.rep-cat {
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rep-impact {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--pale);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rep-conf {
+  color: var(--muted);
+}
+
+.rep-conf.is-high {
+  color: #2f7d4f;
+}
+
+.rep-conf.is-medium {
+  color: #9a6a12;
+}
+
+.rep details summary {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rep details p {
+  margin: 6px 0 0;
+  color: #3d382f;
+  font-size: 13px;
+}
+
+.rep-math {
+  color: var(--muted);
+}
+
+.rep-gaps li,
+.rep-comps li {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.rep-comps li {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rep-comp-name {
+  font-weight: 600;
+}
+
+.rep-muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rep-caveats ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}

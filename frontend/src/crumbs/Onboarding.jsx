@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { SAMPLE_BUSINESS, useAccount } from './account.js'
 import { FoodIcon } from './foodIcons.jsx'
 import './onboarding.css'
-import { CUISINES } from './places.js'
+import { CUISINES, onboardBusiness } from './places.js'
 
 /** "I run a spot": a short sheet that turns this account into a business account. */
 export function Onboarding({ onDone }) {
@@ -19,16 +19,22 @@ export function Onboarding({ onDone }) {
 
   function submit(e) {
     e.preventDefault()
-    update({
-      type: 'business',
-      business: {
-        name: form.name.trim() || SAMPLE_BUSINESS.name,
-        address: form.address.trim() || SAMPLE_BUSINESS.address,
-        cuisine: form.cuisine,
-      },
-    })
+    const business = {
+      name: form.name.trim() || SAMPLE_BUSINESS.name,
+      address: form.address.trim() || SAMPLE_BUSINESS.address,
+      cuisine: form.cuisine,
+    }
+    // Same spot as before: keep its backend id and report. A new or edited spot is registered again.
+    const unchanged = ['name', 'address', 'cuisine'].every((k) => account.business?.[k] === business[k])
+    const known = unchanged ? account.business : business
+    update({ type: 'business', business: known })
     closeOnboarding()
     onDone()
+    if (known.id) return
+    // Register with the backend, which starts the competitor research and report. Offline: stays a local account.
+    onboardBusiness(business).then((r) => {
+      if (r?.businessId) update({ business: { ...business, id: r.businessId } })
+    })
   }
 
   return (
@@ -60,7 +66,10 @@ export function Onboarding({ onDone }) {
               ))}
             </div>
           </fieldset>
-          <p className="onb-note">Insights and rivals use sample data until you connect Square.</p>
+          <p className="onb-note">
+            We'll research the spots near you and write your report (about a minute). Insights and rivals use sample
+            data until you connect Square.
+          </p>
           <button type="submit" className="onb-primary">
             Create business account
           </button>

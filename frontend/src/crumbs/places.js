@@ -27,6 +27,21 @@ async function apiGet(path) {
   }
 }
 
+/** POST JSON and wait for the answer, or null when the backend is down, slow or errors. */
+async function apiPostJson(path, body, timeoutMs = 10000) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    return res.ok ? await res.json() : null
+  } catch {
+    return null
+  }
+}
+
 /** POST JSON and forget: a failed send never blocks the app. */
 function apiPost(path, body) {
   fetch(`${API_BASE}${path}`, {
@@ -280,9 +295,9 @@ async function fetchAlerts(params) {
  * has nothing for yet is asked again with `demo=true`; no backend → the sample file. Read flags merge with the ones
  * kept in this browser.
  */
-export async function getAlerts({ lat, lng, audience }) {
+export async function getAlerts({ lat, lng, audience, businessId }) {
   const requests = [{ audience: 'consumer', lat, lng, radiusMi: 1 }]
-  if (audience === 'business') requests.push({ audience: 'business', businessId: businessData.you.id })
+  if (audience === 'business') requests.push({ audience: 'business', businessId: businessId ?? businessData.you.id })
   const lists = await Promise.all(
     requests.map(async (params) => {
       const list = await fetchAlerts(params)
@@ -302,4 +317,28 @@ export function markAlertRead(id) {
   apiPost(`/alerts/${encodeURIComponent(id)}/read`, {})
   const read = readList(ALERTS_READ_KEY)
   if (!read.includes(id)) writeList(ALERTS_READ_KEY, [...read, id])
+}
+
+// ---------- the business's own report (Ruth's advisor, via the backend) ----------
+
+/**
+ * POST /api/business/onboard: registers the spot with the backend, which researches nearby competitors and writes
+ * a tailored report in the background (about a minute). { businessId, reportQueued } or null when the backend is
+ * down, in which case the account stays local and the app keeps showing sample data.
+ */
+export function onboardBusiness({ name, address, cuisine }) {
+  return apiPostJson('/business/onboard', { name, address, cuisine, advisorReport: true })
+}
+
+/**
+ * GET /api/business/{id}/report: { status: none | running | complete | failed, error, summary, report }, or null.
+ * `demo` asks for the saved example report.
+ */
+export function getAdvisorReport(businessId, { demo = false } = {}) {
+  return apiGet(`/business/${encodeURIComponent(businessId)}/report${demo ? '?demo=true' : ''}`)
+}
+
+/** POST /api/business/{id}/report: start a fresh report. { status: 'running' } or null. */
+export function refreshAdvisorReport(businessId) {
+  return apiPostJson(`/business/${encodeURIComponent(businessId)}/report`, {})
 }

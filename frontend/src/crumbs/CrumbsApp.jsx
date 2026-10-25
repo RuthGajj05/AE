@@ -32,7 +32,7 @@ function Shell() {
   const [tab, setTab] = useState(() => tabFromHash(business))
   const businessNow = useRef(business)
   const mapControl = useRef(null)
-  const alerts = useAlerts(business ? 'business' : 'consumer')
+  const alerts = useAlerts(business ? 'business' : 'consumer', account.business?.id)
   const unread = alerts.alerts.filter((a) => !a.read && alertKindOn(account, a.kind)).length
 
   useEffect(() => {
