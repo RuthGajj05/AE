@@ -290,7 +290,7 @@ If find_places and get_place_reviews are available, prefer them for ratings and 
 
 Rules:
 - Only report facts you saw in a tool result, and list the URLs each competitor entry is based on. If a price or rating isn't found, leave it empty and mention it in gaps_and_caveats. Never estimate prices.
-- Search and read pages in parallel when the calls don't depend on each other."""
+- Work in a few large batches, not many small turns: every turn costs time. Once you've chosen the competitors, request all of their review searches in one turn, then all of their menu and price lookups (read_pages plus search_web) in the next turn. Only follow up on specific gaps after that, again batching every follow-up into one turn. Avoid turns with a single tool call unless nothing else is left to do."""
 
 
 def run(business: str, business_type: str, location: str) -> dict:

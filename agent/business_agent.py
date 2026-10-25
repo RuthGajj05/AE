@@ -161,7 +161,9 @@ Search for the business by name and location: its website, Google/Yelp/TripAdvis
 
 Make sure results are about this exact business at this location, not a similarly named one. If you can't find it after a few searches, it may be new or not listed: submit with found_online=false and list that as a presence gap rather than searching further.
 
-Only report facts you saw in a tool result. Call submit_business_profile once."""
+Google Maps listings and Google ratings rarely appear in these web search results, so not finding one does not mean the business has no Google listing. The same goes for any other site: only call something missing if you have positive evidence (e.g. the business's own site says it has no menu). Otherwise phrase it as unverified, e.g. "Couldn't confirm a Google Business listing; check it directly."
+
+Only report facts you saw in a tool result. Batch your searches into as few turns as possible. Call submit_business_profile once."""
 
 
 def research_presence(business: str, location: str, website: str | None = None) -> dict:
