@@ -1,0 +1,4 @@
+anthropic>=2.3.0
+tavily-python
+python-dotenv
+httpx
