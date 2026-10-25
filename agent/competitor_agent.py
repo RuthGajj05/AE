@@ -14,6 +14,7 @@ import math
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 
@@ -30,6 +31,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 MODEL = "claude-opus-5-5"
 MAX_PAGE_CHARS = 6000  # per extracted page, to keep tool results a sane size
+MAX_TURNS = 40
 REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 
 tavily = TavilyClient(api_key=os.environ.get("TAVILY_API_KEY"))
@@ -306,33 +308,67 @@ Rules:
 - Search and read pages in parallel when the calls don't depend on each other."""
 
 
+def _run_tool(tools_by_name: dict, call) -> dict:
+    tool = tools_by_name.get(call.name)
+    try:
+        if tool is None:
+            raise ValueError(f"Unknown tool: {call.name}")
+        return {"type": "tool_result", "tool_use_id": call.id, "content": tool.call(call.input)}
+    except Exception as e:
+        return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {e}", "is_error": True}
+
+
 def run(business: str, business_type: str, location: str) -> dict:
     client = anthropic.Anthropic()
     submitted.clear()
     tools = [find_nearby_osm, search_web, read_pages, submit_report]
     if GOOGLE_PLACES_API_KEY:  # paid; only used when a key is configured
         tools[1:1] = [find_places, get_place_reviews]
-    runner = client.beta.messages.tool_runner(
-        model=MODEL,
-        max_tokens=16000,
-        max_iterations=40,
-        system=SYSTEM,
-        tools=tools,
-        output_config={"effort": "medium"},
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        messages=[{
-            "role": "user",
-            "content": f"Business: {business}\nType: {business_type}\nLocation: {location}",
-        }],
-    )
-    for message in runner:
-        for block in message.content:
-            if block.type == "tool_use":
-                print(f"  -> {block.name}: {json.dumps(block.input)[:120]}", file=sys.stderr)
-        if message.stop_reason == "refusal":
-            raise RuntimeError(f"Request was declined: {message.stop_details}")
+    tools_by_name = {t.name: t for t in tools}
+    messages = [{
+        "role": "user",
+        "content": f"Business: {business}\nType: {business_type}\nLocation: {location}",
+    }]
+    start = time.monotonic()
 
+    # A manual loop instead of the SDK's tool runner, because the runner executes
+    # a turn's tool calls one at a time; here they all run at once.
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        for _ in range(MAX_TURNS):
+            t0 = time.monotonic()
+            response = client.beta.messages.create(
+                model=MODEL,
+                max_tokens=16000,
+                system=SYSTEM,
+                tools=[t.to_dict() for t in tools],
+                output_config={"effort": "medium"},
+                betas=["server-side-fallback-2026-07-01"],
+                fallbacks="default",
+                messages=messages,
+            )
+            model_secs = time.monotonic() - t0
+            if response.stop_reason == "refusal":
+                raise RuntimeError(f"Request was declined: {response.stop_details}")
+            messages.append({"role": "assistant", "content": response.content})
+
+            calls = [b for b in response.content if b.type == "tool_use"]
+            if not calls:
+                break
+            for c in calls:
+                print(f"  -> {c.name}: {json.dumps(c.input)[:120]}", file=sys.stderr)
+            t0 = time.monotonic()
+            results = list(pool.map(lambda c: _run_tool(tools_by_name, c), calls))
+            print(
+                f"     model {model_secs:.0f}s, {len(calls)} tool call(s) {time.monotonic() - t0:.0f}s",
+                file=sys.stderr,
+            )
+            messages.append({"role": "user", "content": results})
+            if submitted:
+                break
+        else:
+            raise RuntimeError(f"Agent did not finish within {MAX_TURNS} turns.")
+
+    print(f"     total {time.monotonic() - start:.0f}s", file=sys.stderr)
     if not submitted:
         raise RuntimeError("Agent finished without submitting a report.")
     return {
