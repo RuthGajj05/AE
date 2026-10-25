@@ -1,0 +1,123 @@
+/* Saved tab */
+
+.saved {
+  height: 100%;
+  overflow-y: auto;
+  /* bottom padding clears the raised Map button */
+  padding: calc(16px + var(--safe-top)) 16px 56px;
+}
+
+.saved > * {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.saved h1 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-family: 'Fredoka', 'DM Sans', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.saved-item {
+  border-radius: 18px;
+  /* dark backing shows while a card is swiped away */
+  background: var(--ink);
+}
+
+.saved-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  touch-action: pan-y;
+  transition: transform 0.2s ease-out;
+}
+
+.saved-card.is-swiping {
+  transition: none;
+}
+
+.saved-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0 12px 12px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.saved-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--honey-milk);
+}
+
+.saved-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saved-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.saved-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.saved-why {
+  margin-top: 6px;
+  color: #4a4436;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.saved-remove {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 6px 6px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.saved-remove:hover {
+  background: var(--milk);
+  color: var(--ink);
+}
+
+.saved-empty {
+  margin-top: 40px;
+  color: var(--muted);
+  text-align: center;
+}

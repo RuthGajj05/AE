@@ -183,12 +183,40 @@ export const readPicks = () => readList(PICKS_KEY)
 
 export const isSaved = (spotId) => readList(SAVED_KEY).includes(spotId)
 
-/** Toggles a saved spot; returns whether it's saved now. */
-export function toggleSaved(spotId) {
+const SAVED_SPOTS_KEY = 'crumbs.savedSpots'
+
+/**
+ * Toggles a saved spot; returns whether it's saved now. `snapshot` ({ id, cuisine, name, price, bestAt, reason, lat,
+ * lng }) is what the Saved tab shows, since a backend spot may not be in the sample file.
+ */
+export function toggleSaved(spotId, snapshot) {
   const saved = readList(SAVED_KEY)
   const next = saved.includes(spotId) ? saved.filter((id) => id !== spotId) : [...saved, spotId]
   writeList(SAVED_KEY, next)
+  if (snapshot && next.includes(spotId)) {
+    writeList(SAVED_SPOTS_KEY, [...readList(SAVED_SPOTS_KEY).filter((s) => s?.id !== spotId), snapshot])
+  }
   return next.includes(spotId)
+}
+
+export const removeSaved = (spotId) => writeList(SAVED_KEY, readList(SAVED_KEY).filter((id) => id !== spotId))
+
+function sampleSnapshot(spotId) {
+  for (const c of cuisineData.cuisines) {
+    const s = c.spots.find((spot) => spot.id === spotId)
+    if (s) return { id: s.id, cuisine: c.id, name: s.name, price: s.price, bestAt: s.bestAt, reason: s.reason, lat: s.lat, lng: s.lng }
+  }
+  return null
+}
+
+/** Saved spots for the Saved tab, newest first, each with a walk from the user. */
+export function getSavedSpots() {
+  const snapshots = readList(SAVED_SPOTS_KEY)
+  return [...readList(SAVED_KEY)]
+    .reverse()
+    .map((id) => snapshots.find((s) => s?.id === id) ?? sampleSnapshot(id))
+    .filter(Boolean)
+    .map((s) => ({ ...s, walk: walkFromUser(s) }))
 }
 
 /** The backend's insights breakdown → the `you` scores this app's business report reads. */

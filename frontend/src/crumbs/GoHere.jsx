@@ -3,6 +3,17 @@ import { IconPhone, IconSaved, IconShare } from './icons.jsx'
 import { isScore, mentionText } from './metrics.js'
 import { directionsUrl, isSaved, recordPick, toggleSaved } from './places.js'
 
+const snapshotOf = (spot, cuisine) => ({
+  id: spot.id,
+  cuisine: cuisine.id,
+  name: spot.name,
+  price: spot.price,
+  bestAt: spot.bestAt,
+  reason: spot.reason,
+  lat: spot.lat,
+  lng: spot.lng,
+})
+
 /** Consumer "go here" view for one spot: key stats, ambiance, and the Go here / Save / Call / Share actions. */
 export function GoHere({ spot, cuisine }) {
   const [saved, setSaved] = useState(() => isSaved(spot.id))
@@ -70,7 +81,7 @@ export function GoHere({ spot, cuisine }) {
       </a>
 
       <div className="go-actions">
-        <button className={saved ? 'is-on' : undefined} aria-pressed={saved} onClick={() => setSaved(toggleSaved(spot.id))}>
+        <button className={saved ? 'is-on' : undefined} aria-pressed={saved} onClick={() => setSaved(toggleSaved(spot.id, snapshotOf(spot, cuisine)))}>
           <IconSaved size={20} />
           {saved ? 'Saved' : 'Save'}
         </button>

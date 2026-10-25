@@ -6,8 +6,10 @@ import { BottomNav } from './BottomNav.jsx'
 import { HomeScreen } from './HomeScreen.jsx'
 import { MapScreen } from './MapScreen.jsx'
 import { Onboarding } from './Onboarding.jsx'
+import { SavedScreen } from './SavedScreen.jsx'
 import { TABS } from './tabs.js'
 import { useAlerts } from './useAlerts.js'
+import { YouScreen } from './YouScreen.jsx'
 
 // #/home, #/alerts, #/map, #/saved, #/you. No (or an unknown) hash lands consumers on the Map, businesses on Home.
 const tabFromHash = (business) => {
@@ -67,10 +69,14 @@ function Shell() {
           <AlertsScreen feed={alerts} onOpen={openOnMap} />
         </main>
       )}
-      {(tab === 'saved' || tab === 'you') && (
-        <main className="screen empty-tab">
-          <h1>{TABS.find((t) => t.id === tab).label}</h1>
-          <p>Coming soon.</p>
+      {tab === 'saved' && (
+        <main className="screen">
+          <SavedScreen onOpen={openOnMap} />
+        </main>
+      )}
+      {tab === 'you' && (
+        <main className="screen">
+          <YouScreen />
         </main>
       )}
       <BottomNav current={tab} badges={{ alerts: unread }} />
