@@ -90,4 +90,9 @@ def check_owner(business: dict | None, user: dict | None) -> dict:
     require_user(user)
     if business.get("owner_user_id") != user["id"]:
         raise missing
+    if not business.get("owner_email") and user.get("email"):
+        # Spots set up before owner emails were recorded get the owner's sign-in email the next time they use it.
+        import store
+        store.update_business(business["id"], owner_email=user["email"])
+        business = {**business, "owner_email": user["email"]}
     return business
