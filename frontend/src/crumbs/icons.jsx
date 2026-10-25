@@ -18,6 +18,26 @@ export const IconBell = (p) => (
   </Svg>
 )
 
+// Alert kinds (thin outline, one color)
+const ALERT_ART = {
+  // leaf: fresh in
+  fresh_stock: <path d="M5 19c0-8 5-13 14-14-.5 9-5.5 14-14 14zM5 19l7-7" />,
+  // trophy: top rated
+  top_rated: <path d="M8 4h8v4a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 3M16 6h3a3 3 0 0 1-3 3M12 12v4M9 20h6M10 16h4v4h-4z" />,
+  // price tag
+  price_change: <path d="M4 12.5V5a1 1 0 0 1 1-1h7.5L20 11.5 12.5 19zM8.5 8.5h.01" />,
+  // storefront: new spot
+  new_spot: <path d="M4 9.5 5.5 4h13L20 9.5M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0M5 11.5V20h14v-8.5M10 20v-5h4v5" />,
+  // clock: closed
+  closed: <path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM12 7.5V12l3 2" />,
+  // trend: a rival changed something
+  owner_change: <path d="M4 17l5-5 4 4 7-8M15 8h5v5" />,
+  // box: low stock
+  low_stock: <path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" />,
+}
+
+export const AlertIcon = ({ kind, size = 20 }) => <Svg size={size}>{ALERT_ART[kind] ?? ALERT_ART.new_spot}</Svg>
+
 export const IconLock = (p) => (
   <Svg size={22} {...p}>
     <rect x="5" y="10.5" width="14" height="10" rx="2.5" />

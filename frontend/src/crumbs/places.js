@@ -1,6 +1,7 @@
 // Everything the crumbs app loads or saves goes through this file: Google Places, the sample places and food
 // types, pick events, the business report, and (later) review scores from the backend. See API.md → "crumbs map".
 import { buildBusinessReport } from './businessReport.js'
+import alertData from './data/alerts.json'
 import businessData from './data/business.json'
 import cuisineData from './data/cuisines.json'
 import mock from './data/mock-places.json'
@@ -224,4 +225,38 @@ export async function getBusinessReport() {
 export async function getPlaceScores(placeId) {
   const scores = placeId ? await apiGet(`/places/${encodeURIComponent(placeId)}/scores`) : null
   return { freshness: scores?.freshness ?? null, value: scores?.value ?? null, service: scores?.service ?? null }
+}
+
+// ---------- Alerts ----------
+
+const ALERTS_READ_KEY = 'crumbs.alertsRead'
+
+/** The sample feed, shifted so the newest alert is always 12 minutes old in the demo. */
+function sampleAlerts(audience) {
+  const newest = Math.max(...alertData.alerts.map((a) => Date.parse(a.createdAt)))
+  const shift = Date.now() - 12 * 60 * 1000 - newest
+  return alertData.alerts
+    .filter((a) => audience === 'business' || a.audience === 'consumer')
+    .map((a) => ({ ...a, createdAt: new Date(Date.parse(a.createdAt) + shift).toISOString() }))
+}
+
+/**
+ * Alerts near a point, newest first. `audience` is 'consumer' or 'business' (business also gets the consumer feed).
+ * From GET /api/alerts, otherwise the sample file. Read flags merge with the ones kept in this browser.
+ */
+export async function getAlerts({ lat, lng, audience }) {
+  const payload = await apiGet(`/alerts?${new URLSearchParams({ lat, lng, audience })}`)
+  const live = Array.isArray(payload) ? payload : Array.isArray(payload?.alerts) ? payload.alerts : null
+  const read = new Set(readList(ALERTS_READ_KEY))
+  const alerts = (live ?? sampleAlerts(audience))
+    .map((a) => ({ ...a, read: Boolean(a.read) || read.has(a.id) }))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+  return { alerts, isSample: !live }
+}
+
+/** POST /api/alerts/{id}/read, and remember it here so the sample feed stays read too. */
+export function markAlertRead(id) {
+  apiPost(`/alerts/${encodeURIComponent(id)}/read`, {})
+  const read = readList(ALERTS_READ_KEY)
+  if (!read.includes(id)) writeList(ALERTS_READ_KEY, [...read, id])
 }

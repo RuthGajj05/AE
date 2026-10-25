@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { FallbackMap } from './FallbackMap.jsx'
 import { FoodChips } from './FoodChips.jsx'
 import { FoodSheet } from './FoodSheet.jsx'
@@ -30,8 +30,11 @@ function useSheetHeight(screen, inset) {
   )
 }
 
-/** The Map tab: full-screen map, floating top bar with food chips, recenter button and the bottom sheet. */
-export function MapScreen({ active }) {
+/**
+ * The Map tab: full-screen map, floating top bar with food chips, recenter button and the bottom sheet.
+ * `controlRef` gets { openSpot(cuisine, spotId) } so other tabs can open a food type, and a spot's Go here sheet.
+ */
+export function MapScreen({ active, controlRef }) {
   const [places, setPlaces] = useState(() => (hasKey ? [] : getMockPlaces()))
   // 'loading' → waiting on Google Places, 'live' → real places, 'sample' → the 10 mock spots
   const [status, setStatus] = useState(hasKey ? 'loading' : 'sample')
@@ -73,9 +76,10 @@ export function MapScreen({ active }) {
     setStatus('sample')
   }, [])
 
-  const chooseCuisine = useCallback((id) => {
+  // `spotId` opens that spot's Go here sheet as soon as the food type is showing.
+  const chooseCuisine = useCallback((id, spotId = null) => {
     setSelectedId(null)
-    setSpotId(null)
+    setSpotId(spotId)
     setView('compare')
     setSort('overall')
     setSnap('half')
@@ -89,6 +93,8 @@ export function MapScreen({ active }) {
         if (requested.current === id) setCuisineId(null)
       })
   }, [])
+
+  useImperativeHandle(controlRef, () => ({ openSpot: chooseCuisine }), [chooseCuisine])
 
   // A map tap (id null) also closes an open food spot.
   const selectPlace = useCallback((id) => {
