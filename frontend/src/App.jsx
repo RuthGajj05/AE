@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Dashboard } from './components/Dashboard.jsx'
+import { MapView } from './components/MapView.jsx'
 import { ErrorView, LoadingView } from './components/States.jsx'
 import { DropOverlay } from './components/FileDrop.jsx'
 import { IconUpload, Logo } from './components/Icons.jsx'
@@ -16,7 +17,10 @@ function describeError(err) {
   return err?.message || 'Something went wrong loading the data.'
 }
 
+const viewFromHash = () => (window.location.hash === '#/map' ? 'map' : 'dashboard')
+
 export default function App() {
+  const [view, setView] = useState(viewFromHash)
   const [state, setState] = useState(() => (DATA_URL ? { status: 'loading' } : savedState()))
   const [attempt, setAttempt] = useState(0)
   const [toast, setToast] = useState(null)
@@ -36,6 +40,12 @@ export default function App() {
       })
     return () => ctrl.abort()
   }, [attempt])
+
+  useEffect(() => {
+    const onHash = () => setView(viewFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -68,9 +78,19 @@ export default function App() {
       <div className="backdrop" aria-hidden="true" />
 
       <header className="topbar">
-        <div className="brand">
-          <Logo />
-          <span>LocalEdge</span>
+        <div className="topbar-left">
+          <div className="brand">
+            <Logo />
+            <span>LocalEdge</span>
+          </div>
+          <nav className="tabs" aria-label="Views">
+            <a href="#/" className={view === 'dashboard' ? 'is-active' : undefined} aria-current={view === 'dashboard' ? 'page' : undefined}>
+              Dashboard
+            </a>
+            <a href="#/map" className={view === 'map' ? 'is-active' : undefined} aria-current={view === 'map' ? 'page' : undefined}>
+              Map
+            </a>
+          </nav>
         </div>
         <div className="topbar-actions">
           {data && <SourcePill data={data} onReset={reload} />}
@@ -91,13 +111,19 @@ export default function App() {
         </div>
       </header>
 
-      <main className="page">
-        {state.status === 'loading' && <LoadingView />}
-        {state.status === 'error' && (
-          <ErrorView message={state.message} onRetry={reload} onUseSaved={() => setState(savedState())} />
-        )}
-        {data && <Dashboard data={data} onLoadFile={() => fileInput.current?.click()} />}
-      </main>
+      {data && view === 'map' ? (
+        <main>
+          <MapView data={data} />
+        </main>
+      ) : (
+        <main className="page">
+          {state.status === 'loading' && <LoadingView />}
+          {state.status === 'error' && (
+            <ErrorView message={state.message} onRetry={reload} onUseSaved={() => setState(savedState())} />
+          )}
+          {data && <Dashboard data={data} onLoadFile={() => fileInput.current?.click()} />}
+        </main>
+      )}
 
       {dragging && <DropOverlay />}
       {toast && (

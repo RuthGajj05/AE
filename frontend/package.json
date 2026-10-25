@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "geocode": "node scripts/geocode-spots.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
+    "leaflet": "^1.9.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

@@ -41,7 +41,8 @@ shows.
 | `business`, `type`, `location`, `date` | Page header |
 | `market_summary` | "Market summary" card |
 | `competitors[].distance_note` | Distance column — `"~630 m"`, `"~0.6 mi east"` and `"~1.5 km"` are all parsed |
-| `competitors[].lat`, `lng` | **New — please add (Ruth).** The map needs them; LocalEdge passes them through |
+| `competitors[].lat`, `lng` | **Optional (Ruth).** Used for map pins when present. Until then, pins come from `data/spots.geo.json`, geocoded once from `address` |
+| `competitors[].address` | Map card, geocoding, and the zip used by the Seattle license check — keep the zip in it |
 | `competitors[].rating`, `review_count` | Rating column and "Market at a glance" tiles. `null` is fine |
 | `competitors[].price_points` | "Items from" column (lowest `$` price) and the expanded row |
 | `competitors[].complaints` | Top weakness, and grouped into the "What customers complain about" themes |
