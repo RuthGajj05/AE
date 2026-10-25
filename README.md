@@ -104,6 +104,38 @@ The Toast integration is written from Toast's docs and hasn't been tested agains
 
 The first run saves a baseline of the competitors. Each later run re-checks the same competitors (plus a search for new openings and closures), compares with the last snapshot, and if anything material changed (a new shop, a closure, a price change, new hours) prints a short message, appends it to `state/<business>/notifications.log`, and texts it to `--sms` if Twilio is configured (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` in `.env`). Run it on a schedule, e.g. Monday, Wednesday and Friday mornings.
 
+### Supabase (for the app)
+
+The schema is in [`supabase/migrations/`](supabase/migrations/). Apply it in the Supabase SQL editor (or with `supabase db push`). Tables:
+
+| Table | What's in it | App access |
+|---|---|---|
+| `businesses` | One row per shop: name, type, location, time zone, monitoring on/off, notify hour, SMS/email opt-in | Owner reads and edits their own |
+| `competitors` | Latest known state of each tracked competitor (rating, hours, status, prices in `details`) | Owner reads |
+| `changes` | Each change detected (kind, competitor, before → after, evidence, why it matters) | Owner reads |
+| `notifications` | The in-app feed plus outgoing texts/emails with their send status | Owner reads, can set `read_at` |
+| `snapshots` | Full research from each run | Owner reads |
+| `monitor_runs` | Each scheduled check: status, error, number of changes ("last checked" in the app) | Owner reads |
+| `advisor_reports` | Full advisor reports | Owner reads |
+
+Row level security limits signed-in owners to their own businesses. The Python monitor writes with the service-role key, which bypasses it, so that key must stay on the server and never go in the Lovable frontend. Add to `.env` on the machine that runs the monitor:
+
+```
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+RESEND_API_KEY=...        # optional, for email
+RESEND_FROM=alerts@yourdomain.com
+```
+
+Then schedule:
+
+```sh
+.venv/bin/python agent/monitor.py --all       # Mon/Wed/Fri: check every business with monitoring on
+.venv/bin/python agent/monitor.py --deliver   # hourly: send texts/emails at each owner's notify hour
+```
+
+Each check adds the alert to the in-app feed right away and queues a text/email for the owner's `notify_hour` (default 2pm local).
+
 Competitor research only:
 
 ```sh
@@ -120,7 +152,9 @@ Competitor research only:
 - `agent/competitor_agent.py`: competitor research agent and its tools (OpenStreetMap, Tavily, optional Google Places)
 - `agent/business_agent.py`: sales-data analysis and the agent that researches the business's own online presence
 - `agent/pos.py`: pulls item-level sales from the Square and Toast APIs
-- `agent/monitor.py`: re-checks competitors on a schedule and notifies the owner of changes
+- `agent/monitor.py`: re-checks competitors on a schedule and notifies the owner of changes (local files or Supabase)
+- `agent/supabase_store.py`: reads and writes the Supabase tables
+- `supabase/migrations/`: the database schema and access rules
 - `agent/agent_loop.py`: shared agent loop that runs each turn's tool calls in parallel
 - `agent/sources.py`: which sites web search uses for listings and reviews
 - `scripts/make_sample_sales.py`: generates the fake sample sales data
