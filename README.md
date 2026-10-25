@@ -43,10 +43,9 @@ Competitor research only:
 .venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle"
 ```
 
-## Examples
+## Example
 
-- [`examples/capitol-hill-bakery-advisor.json`](examples/capitol-hill-bakery-advisor.json): full advisor report for the fictional "Test Bakery" on Capitol Hill, using the fake sample sales.
-- [`examples/capitol-hill-bakery-report.json`](examples/capitol-hill-bakery-report.json): an earlier competitor-only report (older format, which also included recommendations).
+[`examples/capitol-hill-bakery-advisor.json`](examples/capitol-hill-bakery-advisor.json): full advisor report for the fictional "Test Bakery" on Capitol Hill, using the fake sample sales.
 
 ## Files
 
