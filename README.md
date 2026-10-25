@@ -1,6 +1,12 @@
 # AE
 
-Competitor research agent for small, brick-and-mortar businesses. Given a business and its location, it finds nearby competitors, reads their reviews and prices, and writes a structured report with evidence-backed recommendations.
+Tailored advice for small, brick-and-mortar businesses. Given a business, its location and its sales data, it researches nearby competitors and the business's own online presence in parallel, then writes recommendations specific to what that business lacks or could change, with estimated dollar impact.
+
+```
+              ┌─ competitor research (agent)            ─┐
+in parallel ──┼─ your online presence (agent)           ─┼─→ advisor → tailored recommendations
+              └─ your sales data (plain Python analysis) ─┘
+```
 
 ## Setup
 
@@ -21,15 +27,32 @@ GOOGLE_PLACES_API_KEY=...
 
 ## Run
 
+Full pipeline (about 2.5 minutes):
+
 ```sh
-.venv/bin/python agent/competitor_agent.py "Sweet Crumb Bakery" bakery "Capitol Hill, Seattle"
+.venv/bin/python agent/advisor.py "Test Bakery" bakery "Capitol Hill, Seattle" --sales data/sample_sales.csv
 ```
 
-Progress prints as the agent searches. The report is saved to `reports/<business>-<date>.json`.
+`--sales` takes a Square "Items" sales export (CSV with Date, Time, Category, Item, Qty, Gross Sales). `data/sample_sales.csv` is **fake** data for a fictional bakery, made by `scripts/make_sample_sales.py`.
 
-See [`examples/capitol-hill-bakery-report.json`](examples/capitol-hill-bakery-report.json) for a sample report: a test run for a hypothetical bakery on Capitol Hill, Seattle.
+The report is saved to `reports/<business>-<date>-advisor.json`. Progress and timings print as it runs.
+
+Competitor research only:
+
+```sh
+.venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle"
+```
+
+## Examples
+
+- [`examples/capitol-hill-bakery-advisor.json`](examples/capitol-hill-bakery-advisor.json): full advisor report for the fictional "Test Bakery" on Capitol Hill, using the fake sample sales.
+- [`examples/capitol-hill-bakery-report.json`](examples/capitol-hill-bakery-report.json): an earlier competitor-only report (older format, which also included recommendations).
 
 ## Files
 
-- `agent/competitor_agent.py`: the agent (Claude + Tavily tools + report schema)
-- `agent/sources.py`: which sites to search for listings and reviews; edit this to change sources
+- `agent/advisor.py`: runs the three parts in parallel and writes the tailored recommendations
+- `agent/competitor_agent.py`: competitor research agent and its tools (OpenStreetMap, Tavily, optional Google Places)
+- `agent/business_agent.py`: sales-data analysis and the agent that researches the business's own online presence
+- `agent/agent_loop.py`: shared agent loop that runs each turn's tool calls in parallel
+- `agent/sources.py`: which sites web search uses for listings and reviews
+- `scripts/make_sample_sales.py`: generates the fake sample sales data

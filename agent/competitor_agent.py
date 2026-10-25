@@ -9,36 +9,37 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
-import sys
+import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from pathlib import Path
 
-import anthropic
 import httpx
 from anthropic import beta_tool
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from tavily import TavilyClient
 
+from agent_loop import run_agent
 from sources import BLOCKED_DOMAINS, DISCOVERY_DOMAINS, REVIEW_DOMAINS
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-MODEL = "claude-opus-5-5"
 MAX_PAGE_CHARS = 6000  # per extracted page, to keep tool results a sane size
-MAX_TURNS = 40
 REPORTS_DIR = Path(__file__).resolve().parent.parent / "reports"
 
 tavily = TavilyClient(api_key=os.environ.get("TAVILY_API_KEY"))
 GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY")
 PLACES_URL = "https://places.googleapis.com/v1"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OSM_CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "osm"
+OSM_CACHE_SECS = 7 * 24 * 3600
+_nominatim_lock = threading.Lock()
+_nominatim_last = [0.0]
 # OpenStreetMap's usage policy requires an identifying User-Agent.
 OSM_HEADERS = {"User-Agent": "AE-competitor-research/0.1 (student project)"}
 
@@ -52,18 +53,14 @@ class Competitor(BaseModel):
     website: str | None = None
     rating: float | None = Field(None, description="Average star rating, if found")
     review_count: int | None = None
+    hours: str | None = Field(None, description="e.g. 'We-Su 7am-5pm, closed Mon-Tue'")
     specialties: list[str] = Field(default_factory=list)
     price_points: list[str] = Field(
         default_factory=list, description="Item and price, e.g. 'Croissant: $4.75'"
     )
-    praised_for: list[str] = Field(default_factory=list, description="Recurring positives in reviews")
-    complaints: list[str] = Field(default_factory=list, description="Recurring negatives in reviews")
-    sources: list[str] = Field(default_factory=list, description="URLs this entry is based on")
-
-
-class Insight(BaseModel):
-    recommendation: str
-    evidence: str = Field(description="The specific findings that support it, with counts where possible")
+    praised_for: list[str] = Field(default_factory=list, description="Recurring positives in reviews, as short phrases")
+    complaints: list[str] = Field(default_factory=list, description="Recurring negatives in reviews, as short phrases")
+    sources: list[str] = Field(default_factory=list, description="Up to 3 URLs this entry is mainly based on")
 
 
 # ---------- Tools ----------
@@ -127,68 +124,75 @@ def _distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> int:
     return round(6371000 * 2 * math.asin(math.sqrt(a)))
 
 
+def _nominatim(params: dict) -> list:
+    """Nominatim search, cached on disk: places rarely change and the public server
+    allows only 1 request per second."""
+    key = hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()[:16]
+    path = OSM_CACHE_DIR / f"{key}.json"
+    if path.exists() and time.time() - path.stat().st_mtime < OSM_CACHE_SECS:
+        return json.loads(path.read_text())
+    with _nominatim_lock:  # usage policy: max 1 request per second
+        wait = 1.0 - (time.monotonic() - _nominatim_last[0])
+        if wait > 0:
+            time.sleep(wait)
+        resp = httpx.get(NOMINATIM_URL, params={**params, "format": "jsonv2"}, headers=OSM_HEADERS, timeout=10)
+        _nominatim_last[0] = time.monotonic()
+    resp.raise_for_status()
+    OSM_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    path.write_text(resp.text)
+    return resp.json()
+
+
 @beta_tool
-def find_nearby_osm(location: str, osm_tags: list[str], radius_m: int = 1500) -> str:
+def find_nearby_osm(location: str, place_types: list[str], radius_m: int = 1500) -> str:
     """Find businesses near a location using OpenStreetMap (free). Returns name, address, distance,
     opening hours, website, phone and dietary tags, sorted by distance. No ratings or reviews.
 
     Args:
         location: Neighborhood and city, e.g. "Capitol Hill, Seattle".
-        osm_tags: OpenStreetMap key=value tags for the business type, e.g. ["shop=bakery", "shop=pastry"] for bakeries, ["shop=pet_grooming"] for dog groomers, ["amenity=cafe"] for cafes.
-        radius_m: Search radius in meters (100-5000).
+        place_types: Kinds of business in plain English, e.g. ["bakery", "pastry"] for bakeries, ["pet grooming"] for dog groomers, ["cafe"] for cafes.
+        radius_m: Search radius in meters (300-5000).
     """
     try:
-        geo = httpx.get(
-            NOMINATIM_URL, params={"q": location, "format": "json", "limit": 1},
-            headers=OSM_HEADERS, timeout=30,
-        )
-        geo.raise_for_status()
-        if not geo.json():
+        geo = _nominatim({"q": location, "limit": 1})
+        if not geo:
             return f"Could not find location: {location}"
-        lat, lon = float(geo.json()[0]["lat"]), float(geo.json()[0]["lon"])
+        lat, lon = float(geo[0]["lat"]), float(geo[0]["lon"])
 
-        radius_m = max(100, min(radius_m, 5000))
-        filters = "".join(
-            f'nwr["{k}"="{v}"](around:{radius_m},{lat},{lon});'
-            for k, v in (t.split("=", 1) for t in osm_tags if "=" in t)
-        )
-        if not filters:
-            return "No valid key=value tags given."
-        # The public Overpass server is often briefly overloaded (429/504); retry a few times.
-        for attempt in range(3):
-            resp = httpx.post(
-                OVERPASS_URL, data={"data": f"[out:json][timeout:25];({filters});out center tags;"},
-                headers=OSM_HEADERS, timeout=60,
-            )
-            if resp.status_code not in (429, 502, 503, 504):
-                break
-            time.sleep(5 * (attempt + 1))
-        resp.raise_for_status()
+        radius_m = max(300, min(radius_m, 5000))
+        dlat = radius_m / 111_320
+        dlon = radius_m / (111_320 * math.cos(math.radians(lat)))
+        viewbox = f"{lon - dlon},{lat + dlat},{lon + dlon},{lat - dlat}"
+        found: dict[str, dict] = {}
+        for place_type in place_types[:4]:
+            for el in _nominatim({
+                "q": place_type, "viewbox": viewbox, "bounded": 1, "limit": 50,
+                "extratags": 1, "addressdetails": 1,
+            }):
+                found.setdefault(f"{el.get('osm_type')}/{el.get('osm_id')}", el)
     except Exception as e:
         return f"OpenStreetMap lookup failed: {e}"
 
     places = []
-    for el in resp.json().get("elements", []):
-        tags = el.get("tags", {})
-        if "name" not in tags:
+    for key, el in found.items():
+        tags, addr = el.get("extratags") or {}, el.get("address") or {}
+        if not el.get("name"):
             continue
-        plat = el.get("lat") or el.get("center", {}).get("lat")
-        plon = el.get("lon") or el.get("center", {}).get("lon")
-        address = " ".join(
-            tags[k] for k in ("addr:housenumber", "addr:street", "addr:unit") if k in tags
-        )
+        distance = _distance_m(lat, lon, float(el["lat"]), float(el["lon"]))
+        if distance > radius_m * 1.05:  # the viewbox is a square; keep the circle
+            continue
         places.append({
-            "name": tags["name"],
-            "address": address or None,
-            "distance_m": _distance_m(lat, lon, plat, plon) if plat and plon else None,
-            "type": next((t for t in osm_tags if tags.get(t.split("=")[0]) == t.split("=", 1)[1]), None),
+            "name": el["name"],
+            "address": " ".join(filter(None, [addr.get("house_number"), addr.get("road")])) or None,
+            "distance_m": distance,
+            "type": f"{el.get('category')}={el.get('type')}",
             "opening_hours": tags.get("opening_hours"),
             "website": tags.get("website") or tags.get("contact:website"),
             "phone": tags.get("phone") or tags.get("contact:phone"),
             "diet": {k[5:]: v for k, v in tags.items() if k.startswith("diet:")} or None,
-            "osm_url": f"https://www.openstreetmap.org/{el['type']}/{el['id']}",
+            "osm_url": f"https://www.openstreetmap.org/{key}",
         })
-    places.sort(key=lambda p: p["distance_m"] if p["distance_m"] is not None else 1e9)
+    places.sort(key=lambda p: p["distance_m"])
     return json.dumps({"center": {"lat": lat, "lon": lon}, "places": places[:25]})
 
 
@@ -262,121 +266,50 @@ def get_place_reviews(place_id: str) -> str:
     })
 
 
-submitted: dict = {}
-
-
 @beta_tool
-def submit_report(
-    market_summary: str,
-    competitors: list[Competitor],
-    price_benchmarks: list[str],
-    insights: list[Insight],
-    gaps_and_caveats: list[str],
-) -> str:
-    """Submit the final competitor report. Call this exactly once, when research is done.
+def submit_report(competitors: list[Competitor], gaps_and_caveats: list[str]) -> str:
+    """Submit the research findings. Call this exactly once, when research is done.
+    Facts only: no summary, analysis or recommendations (another step does that).
 
     Args:
-        market_summary: 3-5 sentences on the local competitive landscape.
-        competitors: One entry per nearby competitor found.
-        price_benchmarks: Typical price ranges for core items, e.g. "Sourdough loaf: $9-$13 (6 shops)".
-        insights: 3-5 actionable recommendations for the owner, each backed by evidence.
-        gaps_and_caveats: What couldn't be verified or found (missing prices, stale data, etc.).
+        competitors: One entry per competitor researched.
+        gaps_and_caveats: Short notes on what couldn't be verified or found (missing prices, ratings that may belong to another branch, etc.).
     """
-    submitted.update(
-        market_summary=market_summary,
-        competitors=[c.model_dump() for c in competitors],
-        price_benchmarks=price_benchmarks,
-        insights=[i.model_dump() for i in insights],
-        gaps_and_caveats=gaps_and_caveats,
-    )
     return "Report received."
 
 
-SYSTEM = """You research the local competition for a small, brick-and-mortar business so its owner can stay competitive.
+SYSTEM = """You gather facts about the local competition for a small, brick-and-mortar business.
 
 Work in this order:
 1. Find businesses of the same type close to the given location with find_nearby_osm. OpenStreetMap is volunteer-maintained, so it can miss new shops or list closed ones: also run search_web with purpose="discovery" (e.g. "best bakeries in <location>") to find the well-known local competitors. Choose 8-10 direct competitors, balancing the closest ones with the most prominent ones: a shop with hundreds of reviews in the neighborhood matters even if it's a little farther away or missing from OpenStreetMap. Drop any that a recent source says have closed.
 2. Get each competitor's rating, review count and what customers praise or complain about with search_web, purpose="reviews". Include the street address in the query (e.g. "Bakery Nouveau 137 15th Ave E Seattle reviews") so you get that branch, not another location of the same business. Yelp and TripAdvisor pages can't be read with read_pages, only their search snippets. If a rating clearly belongs to another branch or the snippet doesn't say, say so.
-3. Find prices for core items on each business's own website with read_pages. If its site has no prices or won't load, don't stop there: search_web for "<name> <item> price" or "<name> menu prices", and try online ordering pages (Square, Toast, Clover), menu-listing sites, and recent articles or reviews that quote prices. Search snippets often contain prices even when the page itself can't be read. Prefer in-store prices; if you use a delivery-app price, say so. Aim for at least 3 shops' prices for each core item in price_benchmarks.
-4. Call submit_report once with everything you found.
+3. Find prices for core items on each business's own website with read_pages. If its site has no prices or won't load, don't stop there: search_web for "<name> <item> price" or "<name> menu prices", and try online ordering pages (Square, Toast, Clover), menu-listing sites, and recent articles or reviews that quote prices. Search snippets often contain prices even when the page itself can't be read. Prefer in-store prices; if you use a delivery-app price, say so. Aim for prices from at least 3 shops for each core item.
+4. Call submit_report once with everything you found. Submit facts only, kept short: no summary, analysis or recommendations, since a separate step turns your findings into advice.
 
 If find_places and get_place_reviews are available, prefer them for ratings and reviews: their data belongs to one exact location.
 
 Rules:
 - Only report facts you saw in a tool result, and list the URLs each competitor entry is based on. If a price or rating isn't found, leave it empty and mention it in gaps_and_caveats. Never estimate prices.
-- Recommendations must be specific and cite evidence (e.g. "4 of 7 nearby bakeries have no gluten-free options; 12 reviews ask for them"), not generic advice.
 - Search and read pages in parallel when the calls don't depend on each other."""
 
 
-def _run_tool(tools_by_name: dict, call) -> dict:
-    tool = tools_by_name.get(call.name)
-    try:
-        if tool is None:
-            raise ValueError(f"Unknown tool: {call.name}")
-        return {"type": "tool_result", "tool_use_id": call.id, "content": tool.call(call.input)}
-    except Exception as e:
-        return {"type": "tool_result", "tool_use_id": call.id, "content": f"Error: {e}", "is_error": True}
-
-
 def run(business: str, business_type: str, location: str) -> dict:
-    client = anthropic.Anthropic()
-    submitted.clear()
     tools = [find_nearby_osm, search_web, read_pages, submit_report]
     if GOOGLE_PLACES_API_KEY:  # paid; only used when a key is configured
         tools[1:1] = [find_places, get_place_reviews]
-    tools_by_name = {t.name: t for t in tools}
-    messages = [{
-        "role": "user",
-        "content": f"Business: {business}\nType: {business_type}\nLocation: {location}",
-    }]
-    start = time.monotonic()
-
-    # A manual loop instead of the SDK's tool runner, because the runner executes
-    # a turn's tool calls one at a time; here they all run at once.
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        for _ in range(MAX_TURNS):
-            t0 = time.monotonic()
-            response = client.beta.messages.create(
-                model=MODEL,
-                max_tokens=16000,
-                system=SYSTEM,
-                tools=[t.to_dict() for t in tools],
-                output_config={"effort": "medium"},
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
-                messages=messages,
-            )
-            model_secs = time.monotonic() - t0
-            if response.stop_reason == "refusal":
-                raise RuntimeError(f"Request was declined: {response.stop_details}")
-            messages.append({"role": "assistant", "content": response.content})
-
-            calls = [b for b in response.content if b.type == "tool_use"]
-            if not calls:
-                break
-            for c in calls:
-                print(f"  -> {c.name}: {json.dumps(c.input)[:120]}", file=sys.stderr)
-            t0 = time.monotonic()
-            results = list(pool.map(lambda c: _run_tool(tools_by_name, c), calls))
-            print(
-                f"     model {model_secs:.0f}s, {len(calls)} tool call(s) {time.monotonic() - t0:.0f}s",
-                file=sys.stderr,
-            )
-            messages.append({"role": "user", "content": results})
-            if submitted:
-                break
-        else:
-            raise RuntimeError(f"Agent did not finish within {MAX_TURNS} turns.")
-
-    print(f"     total {time.monotonic() - start:.0f}s", file=sys.stderr)
-    if not submitted:
-        raise RuntimeError("Agent finished without submitting a report.")
+    report = run_agent(
+        SYSTEM,
+        f"Business: {business}\nType: {business_type}\nLocation: {location}",
+        tools,
+        submit_report,
+        label="competitors",
+    )
     return {
         "business": business,
         "type": business_type,
         "location": location,
         "date": date.today().isoformat(),
-        **submitted,
+        **report,
     }
 
 
@@ -393,7 +326,7 @@ def main() -> None:
     slug = "".join(c if c.isalnum() else "-" for c in args.business.lower()).strip("-")
     out = REPORTS_DIR / f"{slug}-{report['date']}.json"
     out.write_text(json.dumps(report, indent=2))
-    print(f"\n{report['market_summary']}\n\nSaved {len(report['competitors'])} competitors to {out}")
+    print(f"\nSaved {len(report['competitors'])} competitors to {out}")
 
 
 if __name__ == "__main__":
