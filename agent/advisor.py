@@ -9,6 +9,7 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +21,7 @@ from pydantic import BaseModel, Field
 
 import business_agent
 import competitor_agent
+import fast_competitors
 import pos
 from agent_loop import MODEL
 
@@ -64,21 +66,33 @@ def load_sales(source: str, days: int) -> dict:
 
 def run(
     business: str, business_type: str, location: str, sales_source: str,
-    website: str | None = None, days: int = 56,
+    website: str | None = None, days: int = 56, fast: bool = False,
 ) -> dict:
     start = time.monotonic()
+    # --fast: parallel per-competitor research and a faster model for the advice (see fast_competitors.py).
+    model = os.environ.get("ADVISOR_MODEL", "claude-sonnet-5-5") if fast else MODEL
+    research = fast_competitors.run if fast else competitor_agent.run
     with ThreadPoolExecutor(max_workers=3) as pool:
-        competitors_f = pool.submit(competitor_agent.run, business, business_type, location)
-        presence_f = pool.submit(business_agent.research_presence, business, location, website)
-        sales_f = pool.submit(load_sales, sales_source, days)
-        sales, presence = sales_f.result(), presence_f.result()
+        if fast:  # sales analysis is near-instant for a CSV, so do it first and price-check the owner's top sellers
+            sales = load_sales(sales_source, days)
+            top_items = [i["item"] for i in sales["items"][:4]]
+            competitors_f = pool.submit(research, business, business_type, location, top_items)
+            sales_f = None
+        else:
+            competitors_f = pool.submit(research, business, business_type, location)
+        presence_f = pool.submit(business_agent.research_presence, business, location, website, fast_competitors.FAST_MODEL if fast else None)
+        if not fast:
+            sales_f = pool.submit(load_sales, sales_source, days)
+        presence = presence_f.result()
+        if sales_f is not None:
+            sales = sales_f.result()
         competitors = competitors_f.result()
     print(f"[advisor] research done in {time.monotonic() - start:.0f}s, writing advice...", file=sys.stderr)
 
     t0 = time.monotonic()
     client = anthropic.Anthropic()
     response = client.beta.messages.parse(
-        model=MODEL,
+        model=model,
         max_tokens=16000,
         system=ADVISOR_SYSTEM,
         output_config={"effort": "medium"},
@@ -124,9 +138,10 @@ def main() -> None:
     )
     parser.add_argument("--days", type=int, default=56, help="Days of POS sales to pull (default 56)")
     parser.add_argument("--website", help="The business's website, if it has one")
+    parser.add_argument("--fast", action="store_true", help="Much faster: parallel per-competitor research and a faster model")
     args = parser.parse_args()
 
-    report = run(args.business, args.business_type, args.location, args.sales, args.website, args.days)
+    report = run(args.business, args.business_type, args.location, args.sales, args.website, args.days, args.fast)
 
     competitor_agent.REPORTS_DIR.mkdir(exist_ok=True)
     slug = "".join(c if c.isalnum() else "-" for c in args.business.lower()).strip("-")

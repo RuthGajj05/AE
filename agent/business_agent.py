@@ -166,13 +166,14 @@ Google Maps listings and Google ratings rarely appear in these web search result
 Only report facts you saw in a tool result. Batch your searches into as few turns as possible. Call submit_business_profile once."""
 
 
-def research_presence(business: str, location: str, website: str | None = None) -> dict:
+def research_presence(business: str, location: str, website: str | None = None, model: str | None = None) -> dict:
     prompt = f"Business: {business}\nLocation: {location}"
     if website:
         prompt += f"\nWebsite: {website}"
     return run_agent(
         PRESENCE_SYSTEM, prompt, [search_web, read_pages, submit_business_profile],
         submit_business_profile, label="your business",
+        **({"model": model, "effort": "low"} if model else {}),
     )
 
 
