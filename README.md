@@ -173,6 +173,11 @@ Competitor research only:
 .venv/bin/python agent/competitor_agent.py "Test Bakery" bakery "Capitol Hill, Seattle"
 ```
 
+## More docs
+
+- [`docs/email-reports.md`](docs/email-reports.md): fast mode, email delivery and the report API: what was built, measured timings, known limits.
+- [`docs/frontend-integration.md`](docs/frontend-integration.md): how the frontend adds "Email me this report".
+
 ## Example
 
 [`examples/capitol-hill-bakery-advisor.json`](examples/capitol-hill-bakery-advisor.json): full advisor report for the fictional "Test Bakery" on Capitol Hill, using the fake sample sales.
