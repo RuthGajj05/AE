@@ -113,7 +113,6 @@ function Insights({ report, name }) {
         <h1>Insights</h1>
         <p className="whoop-sub">
           {report.cuisine.label} · {report.area} · {report.period}
-          <span className="sample-tag is-dark">sample data</span>
         </p>
         <div className="rings">
           {ringScores(report).map((ring) => (
@@ -178,7 +177,6 @@ function Rivals({ report, name }) {
         <h1>Rivals</h1>
         <p>
           {name} · {report.cuisine.label} · {report.area} · {report.period}
-          <span className="sample-tag">sample data</span>
         </p>
       </header>
 

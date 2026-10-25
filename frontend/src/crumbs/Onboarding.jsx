@@ -60,7 +60,6 @@ export function Onboarding({ onDone }) {
               ))}
             </div>
           </fieldset>
-          <p className="onb-note">Insights and rivals use sample data until you connect Square.</p>
           <button type="submit" className="onb-primary">
             Create business account
           </button>

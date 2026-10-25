@@ -133,7 +133,6 @@ export function YouScreen() {
             </Row>
             <div className="you-row is-static">
               <span className="you-row-title">Connect Square</span>
-              <span className="sample-tag">Sample data</span>
             </div>
           </>
         )}
