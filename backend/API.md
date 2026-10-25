@@ -132,7 +132,9 @@ Google results have `lat`/`lng` `null` (filled in on onboarding from the place i
   "cuisine": "sushi",
   "goals": ["Shorter waits", "Rice"],
   "questionnaire": { "businessType": "", "location": "", "offerings": "", "customers": "", "currentApproach": "", "constraints": "" },
-  "deepResearch": false
+  "deepResearch": false,
+  "shareStockAlerts": false,
+  "lowStockThreshold": 5
 }
 ```
 → `{ "businessId": "biz-3a621cbb88", "status": "queued" }`
@@ -194,6 +196,59 @@ rule as the frontend's `metrics.js`). `whereYouWin` lists attributes where you b
 
 The demo business `biz-tamago` has 30 seeded demo picks (flagged `demo` in the table, kept inside the last 7 days).
 Demo picks never count for a real business.
+
+## Alerts
+
+### `GET /api/alerts?audience=consumer&lat=47.6190&lng=-122.3210&radiusMi=1`
+
+| Param | Default | Notes |
+|---|---|---|
+| `audience` | `consumer` | `consumer` (public, near a point) or `business` (one owner's alerts) |
+| `businessId` | — | Required for `business` |
+| `lat`, `lng` | Capitol Hill / the shop | Distances are measured from here |
+| `radiusMi` | `1` | Consumer alerts outside the circle (or with no location) are left out |
+| `cuisine` | — | Optional filter |
+| `demo` | `false` | `backend/demo/alerts.json` (12 made-up Capitol Hill alerts). The demo shop `biz-tamago` always gets them. |
+
+Returns a list, newest first (up to 50, last 14 days):
+
+```json
+[
+  { "id": "a1f…", "kind": "top_rated", "audience": "consumer", "spotId": "spot-hikari-sushi-bar-1525", "cuisine": "sushi",
+    "title": "Hikari Sushi Bar is now #1 for rice",
+    "detail": "Top rice score (93/100) among 6 sushi spots nearby. Reviewers keep praising the warm, well-seasoned rice.",
+    "distanceMi": 0.29, "createdAt": "2026-10-25T21:42:16+00:00", "read": false },
+  { "id": "chg-9c2…", "kind": "low_stock", "audience": "business", "spotId": "biz-…", "cuisine": "sushi",
+    "title": "Low stock: Uni", "detail": "3 left (your alert level is 5). Reorder or mark it sold out.",
+    "distanceMi": 0.0, "createdAt": "2026-10-25T21:52:16+00:00", "read": false }
+]
+```
+
+Demo responses add `"demo": true` to each alert. `spotId` can be `null` (e.g. a new spot that hasn't been scored yet).
+
+| `kind` | Audience | Where it comes from |
+|---|---|---|
+| `new_competitor`, `closed`, `price_change`, `hours_change`, `rating_change`, `review_trend` | business | Ruth's monitor (`agent/monitor.py`): re-research of the tracked competitors, Claude diff of the two snapshots. `detail` = before → after plus her "why it matters" line. |
+| `new_spot`, `closed`, `price_change` | consumer | The same monitor changes, public kinds only, without the owner-only advice; the same change from several owners shows once |
+| `fresh_stock` | consumer | A tracked Square item's IN_STOCK count rose by at least 10 units and at least half since the last snapshot. **Only for businesses that opted in** (`shareStockAlerts` at onboarding, or a goal like "share stock alerts"); off by default. **Never includes counts.** |
+| `low_stock` | business | A tracked item crossed below the owner's threshold (`lowStockThreshold`, default 5). Owner only; includes the count. |
+| `top_rated` | consumer | A spot became #1 for an attribute in its food type and area since the previous scoring of that area. The first scoring is a baseline. |
+
+When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, the monitor uses Ruth's `SupabaseStore` and monitor
+alerts are read from her Supabase `changes` table (the crumbs business needs its `supabase_business_id`).
+Otherwise everything is in SQLite.
+
+### `POST /api/alerts/{id}/read`
+
+→ `{ "ok": true }`. Consumers are anonymous, so a consumer alert's read flag is shared by everyone; keep a per-device
+copy in the browser if that matters.
+
+### `POST /api/business/{id}/alerts/refresh?monitor=true&stock=true`
+
+Runs Ruth's monitor and/or the Square stock check for one business in the background →
+`{ "status": "queued", "monitor": true, "stock": false }`. Each part runs only if its keys are set
+(`ANTHROPIC_API_KEY` + `TAVILY_API_KEY`; `SQUARE_ACCESS_TOKEN`). The first monitor run saves a baseline. For a
+schedule, use `scripts/check_alerts.py --all` (stock hourly with `--stock-only`, the monitor a few times a week).
 
 ## Kneha's endpoints (unchanged)
 

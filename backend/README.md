@@ -39,6 +39,16 @@ Or add `?demo=true` to any request. Serves `backend/demo/` (made-up spots in the
 business `biz-tamago` has 30 seeded demo picks for the Rivals screen. Rebuild the fixtures from the frontend mock
 with `.venv/bin/python scripts/build_demo_fixtures.py ../frontend/src/crumbs/data`.
 
+### Alerts on a schedule
+
+```sh
+.venv/bin/python scripts/check_alerts.py --all --stock-only   # Square stock: hourly (needs SQUARE_ACCESS_TOKEN)
+.venv/bin/python scripts/check_alerts.py --all                # plus Ruth's competitor monitor: a few times a week
+```
+
+The first monitor run per business saves a baseline. `top_rated` alerts come from re-scoring areas
+(`scripts/prewarm.py --refresh`). See API.md → Alerts.
+
 ### Tests
 
 ```sh
@@ -65,11 +75,14 @@ The tests make no network calls.
 | `scoring.py` | Pure math: wait median, ambiance, pick, best-at, rival gaps, insights |
 | `store.py` | **All** database access (SQLite now, `crumbs.db`; swap this one file for Supabase later) |
 | `geo.py` | Census geocoder + Nominatim; Google Places or OSM place search |
+| `alerts.py` | Alerts: Ruth's monitor (via a SQLite adapter, or her Supabase store), Square stock, top-rated |
+| `square_inventory.py` | Square IN_STOCK counts, a port of Manny's `lib/square.ts` |
 | `demo.py`, `demo/` | Demo fixtures and seeded demo picks |
 | `config.py` | Loads `backend/.env`; settings |
 
-Tables mirror Ruth's Supabase schema (`businesses`, `competitors`, `snapshots`) plus `spots`, `spot_scores`, `picks`,
-`business_goals`, and caches for scored areas and geocodes.
+Tables mirror Ruth's Supabase schema (`businesses`, `competitors`, `snapshots`, `monitor_runs`, `changes`) plus
+`spots`, `spot_scores`, `picks`, `business_goals`, `alerts`, `alert_reads`, `inventory_snapshots`, and caches for scored
+areas and geocodes.
 
 ## Endpoints
 
@@ -79,6 +92,7 @@ Tables mirror Ruth's Supabase schema (`businesses`, `competitors`, `snapshots`) 
 | `GET /api/spots`, `GET /api/spots/{id}`, `POST /api/picks` | done | Live scoring needs keys; demo works without |
 | `GET /api/places/search`, `POST /api/business/onboard` | done | |
 | `GET /api/business/{id}/insights`, `GET /api/business/{id}/rivals` | done | |
+| `GET /api/alerts`, `POST /api/alerts/{id}/read`, `POST /api/business/{id}/alerts/refresh` | done | Demo works without keys |
 | `POST /api/recommendations` | done | Kneha's, unchanged. Contract in `frontend/API.md`. `?demo=true` returns canned tips. |
 | `GET /api/competitors` | not built | LocalEdge's old two-endpoint contract; crumbs uses `/api/spots` instead. |
 | `POST /api/analyze` | extra | Earlier one-call version (search + report). Not used by the frontend. |
