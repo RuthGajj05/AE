@@ -1,4 +1,12 @@
+# Kneha's API
 fastapi>=0.110
 uvicorn>=0.29
-anthropic>=0.96
-pydantic>=2.6
+# Shared (Ruth's scraper needs the newer anthropic SDK)
+anthropic>=2.3.0
+pydantic>=2.6,<3
+# Ruth's scraper (agent/)
+tavily-python
+python-dotenv
+httpx
+# Tests
+pytest

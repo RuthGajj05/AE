@@ -44,3 +44,10 @@ yarn-error.log*
 
 # OS metadata
 .DS_Store
+
+# Python backend (backend/) and Ruth's scraper (agent/)
+__pycache__/
+.venv/
+.pytest_cache/
+/.cache/
+/reports/
