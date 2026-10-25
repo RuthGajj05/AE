@@ -22,7 +22,11 @@ class SupabaseStore:
             raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
         self.http = http or httpx.Client(timeout=30)
         self.base = f"{url.rstrip('/')}/rest/v1"
-        self.headers = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+        self.headers = {"apikey": key, "Content-Type": "application/json"}
+        if not key.startswith("sb_"):
+            # Legacy service_role keys are JWTs and also go in Authorization;
+            # newer sb_secret_ keys go in the apikey header only.
+            self.headers["Authorization"] = f"Bearer {key}"
 
     # ---------- low-level REST helpers ----------
 
