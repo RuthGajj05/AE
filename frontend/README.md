@@ -1,4 +1,35 @@
-# LocalEdge — frontend
+# crumbs + LocalEdge — frontend
+
+Two apps in one Vite project:
+
+- **crumbs** (`/`, the main app): a phone-style map of Capitol Hill food spots. Google Map with honey pins, a card
+  for the tapped spot, and a 5-tab nav (Home, Explore, Map, Saved, You; only Map is built). Code in `src/crumbs/`.
+- **LocalEdge** (`/localedge.html`): the competitor dashboard below. Code in `src/App.jsx` and `src/components/`.
+
+## crumbs: Google Maps key
+
+```sh
+cp .env.example .env.local   # then paste your key after VITE_GOOGLE_MAPS_API_KEY=
+```
+
+- `.env.local` is git-ignored. Never commit the key.
+- Enable **Maps JavaScript API** and **Places API (New)** for the key, and restrict it to your site's URLs
+  (HTTP referrers) in Google Cloud. A Maps browser key is visible to anyone who opens the page; the restriction is
+  what protects it.
+- **No key?** The app still runs: it shows 10 sample spots (`src/crumbs/data/mock-places.json`) on a free Stadia Maps
+  base map (no key on localhost; for a deployed URL, add the domain to a free Stadia account) and says "Sample places" at the top. If the key works but Places fails, it shows the same sample spots on the
+  Google map (the reason is logged in the console).
+- `src/crumbs/places.js` is the one data file: Places search, sample places, and the review-score stub.
+- Freshness / Value / Service chips show "—" until the backend's review analysis exists (contract in API.md).
+- Food chips open a draggable compare sheet (peek / half / full) with a crumbs pick, a score chart and a sortable
+  list. Data: `src/crumbs/data/cuisines.json` (sample), loaded through `getCuisine(id)`. Wait is minutes, Ambiance is
+  % positive.
+- Tapping a spot opens **Go here**: dotted walk on the map, stats, and a Google Maps link that saves an anonymous
+  pick (localStorage for now).
+- **You** tab is the business side: **Rivals** (picks lost and why) and **Insights** (breakdown vs the area), from
+  `src/crumbs/data/business.json` plus this browser's picks.
+
+## LocalEdge
 
 Competitor insights for small food businesses in Seattle. One page reads a scraper report (Ruth's format) and shows
 the market at a glance, who the nearby competitors are, what their customers complain about, what things cost, and
@@ -9,12 +40,14 @@ Leaflet map with price pins. Each card checks the shop against Seattle's busines
 
 Vite + React + plain CSS + Leaflet (free OpenStreetMap tiles). No login, no API keys.
 
+(crumbs uses a Google Maps browser key from `.env.local`; see above.)
+
 ## Run it
 
 ```sh
 cd frontend
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # crumbs: http://localhost:5173  ·  LocalEdge: http://localhost:5173/localedge.html
 ```
 
 `npm run build` makes a production build in `dist/`.
