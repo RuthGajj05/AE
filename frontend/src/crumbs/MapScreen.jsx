@@ -141,14 +141,6 @@ export function MapScreen({ active, controlRef }) {
             Capitol Hill
           </span>
           {status === 'loading' && <span className="status-chip">Finding spots…</span>}
-          {status === 'sample' && (
-            <span
-              className="status-chip"
-              title={hasKey ? 'Google Places did not answer, so these are sample spots.' : 'No Google Maps key in .env.local, so these are sample spots.'}
-            >
-              Sample places
-            </span>
-          )}
         </div>
         <FoodChips selected={cuisineId} onSelect={chooseCuisine} />
         {openSpot && (

@@ -58,12 +58,11 @@ export function ReportView({ businessId }) {
   return (
     <div className="rep">
       <section className="rep-head">
-        <p className="rep-eyebrow">{sample ? 'Sample report' : 'Your report'}</p>
+        <p className="rep-eyebrow">{sample ? 'Example report' : 'Your report'}</p>
         <h1>{s?.business ?? 'Your spot'}</h1>
         <p className="rep-sub">
           {s?.location}
           {s?.date && ` · ${day(view.createdAt ?? s.date)}`}
-          {s?.isDemoSales && <span className="rep-tag">demo sales</span>}
           {s && !s.usedSales && <span className="rep-tag">no sales data</span>}
         </p>
         {running && <p className="rep-status is-running">Researching nearby spots… about a minute.</p>}

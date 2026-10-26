@@ -127,7 +127,7 @@ export function YouScreen() {
               </button>
             ))}
           </div>
-          <p className="you-note">For the demo. Business accounts see Insights and Rivals on Home.</p>
+          <p className="you-note">Business accounts see their report, Insights and Rivals on Home.</p>
         </Row>
 
         {business && (

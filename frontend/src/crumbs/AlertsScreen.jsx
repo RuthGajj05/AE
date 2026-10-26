@@ -142,11 +142,6 @@ export function AlertsScreen({ feed, onOpen }) {
         ))}
       </div>
 
-      {feed.isSample && !feed.loading && (
-        <p className="alerts-sample">
-        </p>
-      )}
-
       {businessId && (
         <div className="alerts-check">
           <button className="alerts-check-btn" onClick={checkNow} disabled={check?.busy}>
