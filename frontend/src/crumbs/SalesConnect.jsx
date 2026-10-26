@@ -81,7 +81,6 @@ export function SalesConnect({ businessId, refreshReport = true, onDone }) {
         {status ? describe(status) : 'Checking…'}
         {status?.connectedAt && <span className="sales-muted"> · since {day(status.connectedAt)}</span>}
       </p>
-      {status?.sample && <p className="sales-muted">This is the sample CSV, so reports are labeled as a demo.</p>}
       {notice && (
         <p className="sales-notice" role="status">
           {notice}
